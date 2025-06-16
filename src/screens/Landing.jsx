@@ -247,32 +247,89 @@ function Landing() {
                 onClose={closeModals}
                 title="Game Rules"
             >
-                <div className="space-y-4 text-gray-300">
+                <div 
+                    className="space-y-4 text-gray-300 max-h-[60vh] overflow-y-auto pr-1"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#374151 transparent'
+                    }}
+                >
+                    <style jsx="true">{`
+                        div::-webkit-scrollbar {
+                            width: 6px;
+                        }
+                        div::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        div::-webkit-scrollbar-thumb {
+                            background: #374151;
+                            border-radius: 3px;
+                        }
+                        div::-webkit-scrollbar-thumb:hover {
+                            background: #4b5563;
+                        }
+                    `}</style>
                     <div>
                         <h4 className="font-semibold text-lg mb-2 text-white">How to Play:</h4>
-                        <ul className="space-y-2 text-sm list-disc list-inside">
-                            <li>Each round shows a childhood photo of a batchmate.</li>
-                            <li>Everyone will guess who it is at the same time, in real-time.</li>
-                            <li>Each round gives you 5 options — pick one before the timer runs out.</li>
-                            <li>Once the timer ends or all have answered, the correct person is revealed.</li>
-                            <li>The faster you answer correctly, the more you score!</li>
-                            <li>There are 10–15 rounds in total. Get ready!</li>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Each round shows a childhood photo of a batchmate.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Everyone will guess who it is at the same time, in real-time.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Each round gives you 5 options — pick one before the timer runs out.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Once the timer ends or all have answered, the correct person is revealed.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>The faster you answer correctly, the more you score!</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>There are 10–15 rounds in total. Get ready!</span>
+                            </li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-semibold text-lg mb-2 text-white">Scoring:</h4>
-                        <ul className="space-y-2 text-sm list-disc list-inside">
-                            <li>Correct answer: Points equal to the seconds remaining (max 60).</li>
-                            <li>Wrong answer: -10 points penalty.</li>
-                            <li>No extra points for waiting — be fast, be right.</li>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Correct answer: Points equal to the seconds remaining (max 60).</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Wrong answer: -10 points penalty.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>No extra points for waiting — be fast, be right.</span>
+                            </li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-semibold text-lg mb-2 text-white">Winning:</h4>
-                        <ul className="space-y-2 text-sm list-disc list-inside">
-                            <li>Scores are updated after every round.</li>
-                            <li>Final leaderboard will reveal who knows the batch best.</li>
-                            <li>Top 3 get a fun shoutout at the end!</li>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Scores are updated after every round.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Final leaderboard will reveal who knows the batch best.</span>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="text-gray-400 mr-3 mt-1">•</span>
+                                <span>Top 3 get a fun shoutout at the end!</span>
+                            </li>
                         </ul>
                     </div>
                     <div className="pt-4">
