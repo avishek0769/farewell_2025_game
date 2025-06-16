@@ -6,6 +6,30 @@ import img4 from "../assets/images/img4.jpg"
 import img5 from "../assets/images/img5.jpg"
 import img6 from "../assets/images/img6.jpg"
 import img7 from "../assets/images/img7.jpg"
+import RulesModal from '../components/RulesModal'
+
+export const Modal = ({ isOpen, onClose, title, children }) => {
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+                <div className="flex justify-between items-center p-6 border-b border-gray-700">
+                    <h3 className="text-xl font-bold text-white">{title}</h3>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-200 text-2xl"
+                    >
+                        ×
+                    </button>
+                </div>
+                <div className="p-6">
+                    {children}
+                </div>
+            </div>
+        </div>
+    )
+}
 
 function Landing() {
     const [showCreateModal, setShowCreateModal] = useState(false)
@@ -51,28 +75,6 @@ function Landing() {
         setFormData({ fullName: '', adminPassword: '' })
     }
 
-    const Modal = ({ isOpen, onClose, title, children }) => {
-        if (!isOpen) return null
-
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-700">
-                    <div className="flex justify-between items-center p-6 border-b border-gray-700">
-                        <h3 className="text-xl font-bold text-white">{title}</h3>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-200 text-2xl"
-                        >
-                            ×
-                        </button>
-                    </div>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        )
-    }
 
     return (
         <div className="min-h-screen relative overflow-hidden bg-gray-900">
@@ -100,7 +102,7 @@ function Landing() {
                 </div>
 
                 {/* Dark blur overlay with gradient */}
-                <div className="absolute inset-0 backdrop-blur-xs bg-gradient-to-br from-[#0f0f0f]/90 via-[#1a1a1a]/85 to-black/90"></div>
+                <div className="absolute inset-0 backdrop-blur-[4px] bg-gradient-to-br from-[#0f0f0f]/80 via-[#1a1a1a]/85 to-black/90"></div>
             </div>
 
             {/* Main content */}
@@ -114,7 +116,7 @@ function Landing() {
                     </h1>
 
                     {/* Subtitle */}
-                    <p className="text-lg sm:text-2xl text-gray-300 mb-12 font-medium max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-lg sm:text-2xl text-gray-300 mb-12 font-medium max-w-3xl mx-auto leading-relaxed">
                         Can you still recognize your batchmates from their childhood photos?
                     </p>
 
@@ -242,107 +244,7 @@ function Landing() {
             </Modal>
 
             {/* Rules Modal */}
-            <Modal
-                isOpen={showRulesModal}
-                onClose={closeModals}
-                title="Game Rules"
-            >
-                <div 
-                    className="space-y-4 text-gray-300 max-h-[60vh] overflow-y-auto pr-1"
-                    style={{
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: '#374151 transparent'
-                    }}
-                >
-                    <style jsx="true">{`
-                        div::-webkit-scrollbar {
-                            width: 6px;
-                        }
-                        div::-webkit-scrollbar-track {
-                            background: transparent;
-                        }
-                        div::-webkit-scrollbar-thumb {
-                            background: #374151;
-                            border-radius: 3px;
-                        }
-                        div::-webkit-scrollbar-thumb:hover {
-                            background: #4b5563;
-                        }
-                    `}</style>
-                    <div>
-                        <h4 className="font-semibold text-lg mb-2 text-white">How to Play:</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Each round shows a childhood photo of a batchmate.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Everyone will guess who it is at the same time, in real-time.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Each round gives you 5 options — pick one before the timer runs out.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Once the timer ends or all have answered, the correct person is revealed.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>The faster you answer correctly, the more you score!</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>There are 10–15 rounds in total. Get ready!</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-lg mb-2 text-white">Scoring:</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Correct answer: Points equal to the seconds remaining (max 60).</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Wrong answer: -10 points penalty.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>No extra points for waiting — be fast, be right.</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-lg mb-2 text-white">Winning:</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Scores are updated after every round.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Final leaderboard will reveal who knows the batch best.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-gray-400 mr-3 mt-1">•</span>
-                                <span>Top 3 get a fun shoutout at the end!</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div className="pt-4">
-                        <button
-                            onClick={closeModals}
-                            className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-                        >
-                            Got it!
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-
+            <RulesModal closeModals={closeModals} showRulesModal={showRulesModal} />
         </div>
     )
 }
