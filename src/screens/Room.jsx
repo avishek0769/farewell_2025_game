@@ -4,7 +4,6 @@ import RulesModal from '../components/RulesModal'
 
 function Room() {
     const [socket, setSocket] = useState(null)
-    const [roomInfo, setRoomInfo] = useState({ roomId: 'ABC123', hostName: 'Admin' })
     const [players, setPlayers] = useState([])
     const [currentUser, setCurrentUser] = useState({ name: 'Alice Johnson Alice', isAdmin: true }) // Changed to match a player
     const [showRulesModal, setShowRulesModal] = useState(false)
@@ -73,7 +72,7 @@ function Room() {
 
     const handleStartMatch = () => {
         if (socket && currentUser.isAdmin) {
-            socket.emit('startMatch', { roomId: roomInfo.roomId })
+            socket.emit('startMatch', { roomId: "lol" })
         }
     }
 
@@ -189,14 +188,14 @@ function Room() {
                 <div className="max-w-6xl mx-auto">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 bg-clip-text text-transparent">
-                                Room: {roomInfo.roomId}
+                            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 bg-clip-text text-transparent">
+                                Guess Who? — Farewell Edition
                             </h1>
-                            <p className="text-gray-400 mt-1">Host: {roomInfo.hostName}</p>
+                            <p className="text-gray-400 mt-1">Sit tight while everyone joins. This one’s just for you, Batch '22.</p>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="bg-gray-800/70 px-4 py-2 rounded-lg border border-gray-600/50">
-                                <span className="text-2xl font-bold text-white">{players.length}</span>
+                                <span className="text-2xl font-bold text-white">{regularPlayers.length}</span>
                                 <span className="text-gray-400 ml-2">Players</span>
                             </div>
                             <button
