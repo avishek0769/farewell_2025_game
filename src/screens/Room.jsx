@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
-import { Modal } from './Landing'
 import RulesModal from '../components/RulesModal'
 
 function Room() {
     const [socket, setSocket] = useState(null)
     const [roomInfo, setRoomInfo] = useState({ roomId: 'ABC123', hostName: 'Admin' })
     const [players, setPlayers] = useState([])
-    const [currentUser, setCurrentUser] = useState({ name: 'John Doe', isAdmin: false })
+    const [currentUser, setCurrentUser] = useState({ name: 'Alice Johnson Alice', isAdmin: true }) // Changed to match a player
     const [showRulesModal, setShowRulesModal] = useState(false)
     const [showStartingModal, setShowStartingModal] = useState(false)
     const [toasts, setToasts] = useState([])
@@ -22,7 +21,7 @@ function Room() {
         // Mock data for development
         const mockPlayers = [
             { id: '1', name: 'Admin User', isAdmin: true, avatar: 'adventurer' },
-            { id: '2', name: 'Alice Johnson', isAdmin: false, avatar: 'avataaars' },
+            { id: '2', name: 'Alice Johnson Alice', isAdmin: false, avatar: 'avataaars' },
             { id: '3', name: 'Bob Smith', isAdmin: false, avatar: 'bottts' },
             { id: '4', name: 'Carol Wilson', isAdmin: false, avatar: 'croodles' },
             { id: '5', name: 'David Brown', isAdmin: false, avatar: 'micah' },
@@ -53,16 +52,12 @@ function Room() {
             setTimeout(() => {
                 // Navigate to main match page
                 console.log('Navigating to match...')
-            }, 3000)
+            }, 2500)
         })
 
         return () => {
             newSocket.close()
         }
-    }, [])
-
-    useEffect(() => {
-        addToast("Avishek left", "leave")
     }, [])
 
     const addToast = (message, type) => {
@@ -90,17 +85,39 @@ function Room() {
         return `https://api.dicebear.com/7.x/${variant}/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
     }
 
+    const isCurrentUser = (player) => {
+        return player.name === currentUser.name
+    }
+
     const PlayerCard = ({ player }) => (
         <div className={`relative flex items-center p-3 rounded-lg transition-all duration-200 ${
-            player.isAdmin 
-                ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30' 
-                : 'bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50'
+            isCurrentUser(player)
+                ? 'bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/50 shadow-lg shadow-blue-500/20'
+                : player.isAdmin 
+                    ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30' 
+                    : 'bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50'
         }`}>
+            {/* Admin Badge */}
             {player.isAdmin && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                     HOST
                 </div>
             )}
+            
+            {/* Current User Badge */}
+            {isCurrentUser(player) && !player.isAdmin && (
+                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                    YOU
+                </div>
+            )}
+
+            {/* Combined Badge for Admin + Current User */}
+            {isCurrentUser(player) && player.isAdmin && (
+                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                    YOU (HOST)
+                </div>
+            )}
+
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
                 <img
                     src={getDiceBearAvatar(player.name, player.avatar)}
@@ -117,7 +134,9 @@ function Room() {
             </div>
             <div className="flex-1 min-w-0">
                 <p className={`font-medium truncate ${
-                    player.isAdmin ? 'text-purple-300' : 'text-white'
+                    isCurrentUser(player)
+                        ? 'text-blue-300'
+                        : player.isAdmin ? 'text-purple-300' : 'text-white'
                 }`}>
                     {player.name}
                 </p>
@@ -131,12 +150,12 @@ function Room() {
     const StartingModal = () => (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60]">
             <div className="text-center">
-                <div className="relative mb-8">
-                    <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
-                    <div className="absolute inset-0 w-16 h-16 border-4 border-pink-500/30 border-t-pink-500 rounded-full animate-spin mx-auto mt-2 ml-2 animate-reverse"></div>
+                <div className="relative mb-8 top-[-5rem] ">
+                    <div className="absolute left-1/2 transform -translate-x-1/2 w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                    <div className="absolute left-[46.7%] transform -translate-x-1/2 w-16 h-16 border-4 border-pink-500/30 border-t-pink-500 rounded-full animate-spin mx-auto mt-2 ml-2 animate-reverse"></div>
                 </div>
                 <h2 className="text-3xl font-bold text-white mb-4">Match Starting...</h2>
-                <p className="text-gray-300 text-lg">Get ready to test your memory!</p>
+                <p className="text-gray-300 text-lg">Only the sharpest eyes will win!</p>
                 <div className="mt-6 flex justify-center space-x-1">
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -213,7 +232,7 @@ function Room() {
                             <h3 className="text-lg font-semibold text-gray-300 mb-3">
                                 Participants ({regularPlayers.length})
                             </h3>
-                            <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3">
+                            <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3 pt-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {regularPlayers.map(player => (
                                         <PlayerCard key={player.id} player={player} />
@@ -231,9 +250,14 @@ function Room() {
                             {currentUser.isAdmin && (
                                 <button
                                     onClick={handleStartMatch}
-                                    className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4"
+                                    disabled={players.length < 2}
+                                    className={`w-full px-6 py-3 font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4 ${
+                                        players.length >= 2
+                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    }`}
                                 >
-                                    Start Match
+                                    {players.length >= 2 ? 'Start Match' : `Need ${2 - players.length} more player${2 - players.length > 1 ? 's' : ''}`}
                                 </button>
                             )}
 
