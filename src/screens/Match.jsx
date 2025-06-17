@@ -9,11 +9,12 @@ function Match() {
     const [participants, setParticipants] = useState(65)
     const [answered, setAnswered] = useState(28)
     const [selectedOption, setSelectedOption] = useState(null)
-    const [showResults, setShowResults] = useState(false)
+    const [showResults, setShowResults] = useState(true)
     const [pointsEarned, setPointsEarned] = useState(0)
+    const [totalPoints, setTotalPoints] = useState(142) // Add total points state
     const [showConfetti, setShowConfetti] = useState(false)
-    const [currentUser] = useState({ name: 'Alice Johnson', isAdmin: false })
-    const [nextRoundTimer, setNextRoundTimer] = useState(6)
+    const [currentUser] = useState({ name: 'Alice Johnson', isAdmin: false }) // Changed to non-admin for testing
+    const [nextRoundTimer, setNextRoundTimer] = useState(60)
     const [isTransitioning, setIsTransitioning] = useState(false)
     
     const timerRef = useRef(null)
@@ -124,10 +125,12 @@ function Match() {
         if (isCorrect) {
             const points = timeLeft > 0 ? timeLeft : 1
             setPointsEarned(points)
+            setTotalPoints(prev => prev + points) // Update total points
             setShowConfetti(true)
             setTimeout(() => setShowConfetti(false), 3000)
         } else {
             setPointsEarned(-10)
+            setTotalPoints(prev => prev - 10) // Update total points
         }
     }
 
@@ -174,22 +177,24 @@ function Match() {
             {Array.from({ length: 50 }).map((_, i) => (
                 <div
                     key={i}
-                    className="absolute w-2 h-2 bg-yellow-400 animate-ping"
+                    className="absolute animate-bounce"
                     style={{
                         left: `${Math.random() * 100}%`,
                         top: `${Math.random() * 100}%`,
                         animationDelay: `${Math.random() * 2}s`,
                         animationDuration: `${1 + Math.random()}s`
                     }}
-                />
+                >
+                    🎉
+                </div>
             ))}
         </div>
     )
 
     const ProgressBar = ({ current, total }) => (
-        <div className="w-full bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-gray-700 rounded-full h-1.5">
             <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${(current / total) * 100}%` }}
             />
         </div>
@@ -197,26 +202,26 @@ function Match() {
 
     const TimerCircle = ({ timeLeft, total = 60 }) => {
         const percentage = (timeLeft / total) * 100
-        const circumference = 2 * Math.PI * 45
+        const circumference = 2 * Math.PI * 30
         const strokeDashoffset = circumference - (percentage / 100) * circumference
 
         return (
-            <div className="relative w-24 h-24">
-                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+            <div className="relative w-16 h-16">
+                <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 80 80">
                     <circle
-                        cx="50"
-                        cy="50"
-                        r="45"
+                        cx="40"
+                        cy="40"
+                        r="30"
                         stroke="rgb(55, 65, 81)"
-                        strokeWidth="8"
+                        strokeWidth="6"
                         fill="transparent"
                     />
                     <circle
-                        cx="50"
-                        cy="50"
-                        r="45"
+                        cx="40"
+                        cy="40"
+                        r="30"
                         stroke={timeLeft > 10 ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                        strokeWidth="8"
+                        strokeWidth="6"
                         fill="transparent"
                         strokeLinecap="round"
                         strokeDasharray={circumference}
@@ -225,7 +230,7 @@ function Match() {
                     />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={`text-2xl font-bold ${timeLeft > 10 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`text-lg font-bold ${timeLeft > 10 ? 'text-green-400' : 'text-red-400'}`}>
                         {timeLeft}
                     </span>
                 </div>
@@ -245,44 +250,93 @@ function Match() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
+        <div className="min-h-screen bg-gray-900 text-white overflow-x-hidden">
             {showConfetti && <Confetti />}
             
-            {/* Header */}
-            <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50 px-4 py-4">
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex-1">
-                            <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
-                                Round {currentRound} of {totalRounds}
-                            </h1>
-                            <ProgressBar current={currentRound - 1} total={totalRounds} />
-                        </div>
-                        
-                        <div className="flex items-center gap-6">
-                            <div className="text-center">
-                                <p className="text-sm text-gray-400">Answered</p>
-                                <p className="text-lg font-bold">
-                                    <span className="text-green-400">{answered}</span>
-                                    <span className="text-gray-400"> / {participants}</span>
-                                </p>
+            {/* Compact Header */}
+            <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50 px-3 sm:px-4 py-3">
+                <div className="max-w-4xl mx-auto w-full">
+                    <div className="flex flex-col gap-3">
+                        {/* Top Row - Round info and Timer */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-lg sm:text-xl font-bold text-white mb-1">
+                                    Round {currentRound} of {totalRounds}
+                                </h1>
+                                <ProgressBar current={currentRound - 1} total={totalRounds} />
                             </div>
                             
-                            <TimerCircle timeLeft={timeLeft} />
+                            <div className="flex items-center gap-3 ml-4">
+                                <TimerCircle timeLeft={timeLeft} />
+                            </div>
+                        </div>
+
+                        {/* Bottom Row - Stats and Actions */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="text-center">
+                                    <p className="text-xs text-gray-400">Answered</p>
+                                    <p className="text-sm font-bold">
+                                        <span className="text-green-400">{answered}</span>
+                                        <span className="text-gray-400"> / {participants}</span>
+                                    </p>
+                                </div>
+                                
+                                {!currentUser.isAdmin && (
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-400">Your Score</p>
+                                        <p className="text-sm font-bold text-blue-400">
+                                            {totalPoints} pts
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {currentUser.isAdmin && (
+                                <button
+                                    onClick={handleForceNext}
+                                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap"
+                                >
+                                    Force Next
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-4 py-8">
-                {/* Photo Section */}
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-300">
+            <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 w-full">
+                {/* Results Section - Shown at top when results are visible */}
+                {showResults && (
+                    <div className="mb-6 space-y-4">
+                        <div className={`p-6 rounded-lg text-center ${pointsEarned > 0 ? 'bg-green-900/50 border border-green-600/50' : pointsEarned < 0 ? 'bg-red-900/50 border border-red-600/50' : 'bg-gray-800/50 border border-gray-600/50'}`}>
+                            <h3 className="text-xl font-bold mb-2">
+                                {pointsEarned > 0 ? '🎉 Correct!' : pointsEarned < 0 ? '❌ Wrong Answer' : '⏰ Time\'s Up!'}
+                            </h3>
+                            <p className="text-lg mb-2">
+                                It's <span className="font-bold text-green-400">
+                                    {questionData.options.find(opt => opt.id === questionData.correctAnswer)?.name}
+                                </span>
+                            </p>
+                            <p className={`text-2xl font-bold ${pointsEarned > 0 ? 'text-green-400' : pointsEarned < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                {pointsEarned > 0 ? '+' : ''}{pointsEarned} points
+                            </p>
+                        </div>
+
+                        <div className="text-center text-gray-400">
+                            Next round in: <span className="text-white font-bold">{nextRoundTimer}s</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Photo Section - Fades out when results show */}
+                <div className={`text-center mb-8 transition-all duration-500 ${showResults ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+                    <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-300">
                         Who is this little one?
                     </h2>
                     <div className="relative inline-block">
-                        <div className="w-64 h-64 sm:w-80 sm:h-80 mx-auto rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700">
+                        <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700">
                             <img
                                 src={questionData.photo}
                                 alt="Childhood photo"
@@ -344,39 +398,6 @@ function Match() {
                         </button>
                     ))}
                 </div>
-
-                {/* Results Section */}
-                {showResults && (
-                    <div className="text-center space-y-4">
-                        <div className={`p-6 rounded-lg ${pointsEarned > 0 ? 'bg-green-900/50 border border-green-600/50' : pointsEarned < 0 ? 'bg-red-900/50 border border-red-600/50' : 'bg-gray-800/50 border border-gray-600/50'}`}>
-                            <h3 className="text-xl font-bold mb-2">
-                                {pointsEarned > 0 ? '🎉 Correct!' : pointsEarned < 0 ? '❌ Wrong Answer' : '⏰ Time\'s Up!'}
-                            </h3>
-                            <p className="text-lg mb-2">
-                                It's <span className="font-bold text-green-400">
-                                    {questionData.options.find(opt => opt.id === questionData.correctAnswer)?.name}
-                                </span>
-                            </p>
-                            <p className={`text-2xl font-bold ${pointsEarned > 0 ? 'text-green-400' : pointsEarned < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                                {pointsEarned > 0 ? '+' : ''}{pointsEarned} points
-                            </p>
-                        </div>
-
-                        <div className="flex items-center justify-center gap-4">
-                            <div className="text-gray-400">
-                                Next round in: <span className="text-white font-bold">{nextRoundTimer}s</span>
-                            </div>
-                            {currentUser.isAdmin && (
-                                <button
-                                    onClick={handleForceNext}
-                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                                >
-                                    Force Next
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* Waiting Message */}
                 {selectedOption && !showResults && (
