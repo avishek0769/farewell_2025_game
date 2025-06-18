@@ -10,11 +10,11 @@ function Match() {
     const [participants, setParticipants] = useState(65)
     const [answered, setAnswered] = useState(28)
     const [selectedOption, setSelectedOption] = useState(null)
-    const [showResults, setShowResults] = useState(true) //lsl
+    const [showResults, setShowResults] = useState(false) //lsl
     const [pointsEarned, setPointsEarned] = useState(0)
     const [totalPoints, setTotalPoints] = useState(142)
     const [showConfetti, setShowConfetti] = useState(false)
-    const [currentUser] = useState({ name: 'Alice Johnson', isAdmin: false })
+    const [currentUser] = useState({ name: 'Alice Johnson', isAdmin: true })
     const [nextRoundTimer, setNextRoundTimer] = useState(60)
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isPortrait, setIsPortrait] = useState(false);
@@ -32,11 +32,11 @@ function Match() {
     const [questionData] = useState({
         photo: img2,
         options: [
-            { id: 1, name: 'Alice Johnson', votes: 15 },
-            { id: 2, name: 'Bob Smith', votes: 8 },
-            { id: 3, name: 'Carol Wilson', votes: 12 },
-            { id: 4, name: 'David Brown', votes: 18 },
-            { id: 5, name: 'Emma Davis', votes: 12 }
+            { id: 1, name: 'Avishek Adhikary', votes: 15 },
+            { id: 2, name: 'Avishek Adhikary', votes: 8 },
+            { id: 3, name: 'Avishek Adhikary', votes: 12 },
+            { id: 4, name: 'Avishek Adhikary', votes: 18 },
+            { id: 5, name: 'Avishek Adhikary', votes: 12 }
         ],
         correctAnswer: 4 // David Brown
     })
