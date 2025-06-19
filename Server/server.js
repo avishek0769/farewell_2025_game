@@ -5,7 +5,12 @@ import http from "http"
 
 const app = express()
 const server = http.createServer(app)
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 app.use(cors())
 app.use(json())
@@ -24,7 +29,7 @@ app.get("/api/room/status", (req, res) => {
 
 app.post("/api/room/create", (req, res) => {
     const { fullname, adminPassword } = req.body;
-    if(adminPassword == "nokia1234ABCD") {
+    if (adminPassword == "a") {
         roomAdmin.fullname = fullname
         roomAdmin.avatar = "adventurer"
         roomCreated = true
@@ -33,38 +38,46 @@ app.post("/api/room/create", (req, res) => {
     res.status(402).send("Authorization error")
 })
 
+app.get("/api/room/getUsers", (req, res) => {
+    res.status(200).json(users)
+})
+
+app.get("/api/room/getAdmin", (req, res) => {
+    res.status(200).json(roomAdmin)
+})
+
 // Socket Events
 io.on("connection", (socket) => {
     // Create a room
     socket.on("createRoom", (data) => {
         socket.join(ROOM_ID)
-        roomAdmin.socketId = socket.id
+        roomAdmin.id = socket.id
     })
 
     // Join a room
     socket.on("joinRoom", (data) => {
         const { fullname } = data;
-        socket.emit("newUserJoined", { fullname })
+        socket.emit("playerJoined", { fullname })
         socket.join(ROOM_ID)
         let randomNum = Math.floor(Math.random() * 6)
         users.push({
-            socketId: socket.id,
+            id: socket.id,
             fullname,
             avatar: ['adventurer', 'avataaars', 'bottts', 'croodles', 'micah', 'personas'][randomNum]
         })
     })
 
     // Leaving a room
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (data) => {
         let userLeft;
         users = users.filter(user => {
-            if (user.socketId == socket.id) userLeft = user;
+            if (user.id == socket.id) userLeft = user;
             else return true
         })
-        socket.emit("userLeft", { fullname: userLeft.fullname })
+        userLeft && socket.emit("playerLeft", { fullname: userLeft.fullname })
     })
 })
 
-app.listen(3000, () => {
+server.listen(3000, () => {
     console.log("Server running at 3000.....")
 })

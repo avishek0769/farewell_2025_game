@@ -82,7 +82,6 @@ function Landing() {
 
     const handleJoinQuiz = (e) => {
         e.preventDefault()
-        console.log("Callles")
         fetch(`${SERVER_URL}/api/room/status`).then(res => res.json())
         .then(data => {
             if (data.roomCreated) {

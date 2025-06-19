@@ -1,69 +1,73 @@
 import { useState, useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import RulesModal from '../components/RulesModal'
+import { SERVER_URL } from '../../constants'
 
 function Room() {
     const [socket, setSocket] = useState(null)
     const [players, setPlayers] = useState([])
-    const [currentUser, setCurrentUser] = useState({ name: 'Alice Johnson Alice', isAdmin: true }) // Changed to match a player
+    const [admin, setAdmin] = useState()
+    const [currentUser, setCurrentUser] = useState({ name: 'Lol Adhikary', isAdmin: true }) // Changed to match a player
     const [showRulesModal, setShowRulesModal] = useState(false)
     const [showStartingModal, setShowStartingModal] = useState(false)
     const [toasts, setToasts] = useState([])
     const toastIdRef = useRef(0)
 
-    // Mock player data for demo - replace with actual socket data
     useEffect(() => {
-        // Initialize socket connection
-        const newSocket = io(null)
+        const newSocket = io(SERVER_URL)
         setSocket(newSocket)
 
-        // Mock data for development
-        const mockPlayers = [
-            { id: '1', name: 'Admin User', isAdmin: true, avatar: 'adventurer' },
-            { id: '2', name: 'Alice Johnson Alice', isAdmin: false, avatar: 'avataaars' },
-            { id: '3', name: 'Bob Smith', isAdmin: false, avatar: 'bottts' },
-            { id: '4', name: 'Carol Wilson', isAdmin: false, avatar: 'croodles' },
-            { id: '5', name: 'David Brown', isAdmin: false, avatar: 'micah' },
-            { id: '6', name: 'Emma Davis', isAdmin: false, avatar: 'personas' },
-            // Add more mock players to test scrolling
-            ...Array.from({ length: 30 }, (_, i) => ({
-                id: `${i + 7}`,
-                name: `Player ${i + 7}`,
-                isAdmin: false,
-                avatar: ['adventurer', 'avataaars', 'bottts', 'croodles', 'micah', 'personas'][i % 6]
-            }))
-        ]
-        setPlayers(mockPlayers)
+        // newSocket.emit("joinRoom", {
+        //     fullname: currentUser.fullname,
+        // })
 
-        // Socket event listeners
-        newSocket.on('playerJoined', (player) => {
-            setPlayers(prev => [...prev, player])
-            addToast(`${player.name} joined`, 'join')
+        // Get all participants
+        fetch(`${SERVER_URL}/api/room/getUsers`).then(res => res.json())
+        .then(data => {
+            setPlayers(data)
         })
+        .catch(err => console.error('Error fetching players:', err))
 
-        newSocket.on('playerLeft', (playerId, playerName) => {
-            setPlayers(prev => prev.filter(p => p.id !== playerId))
-            addToast(`${playerName} left`, 'leave')
+        // Get admin details
+        fetch(`${SERVER_URL}/api/room/getAdmin`).then(res => res.json())
+        .then(data => {
+            setAdmin(data)
         })
-
-        newSocket.on('startMatch', () => {
-            setShowStartingModal(true)
-            setTimeout(() => {
-                // Navigate to main match page
-                console.log('Navigating to match...')
-            }, 2500)
-        })
-
-        return () => {
-            newSocket.close()
-        }
+        .catch(err => console.error('Error fetching admin:', err))
     }, [])
+
+    useEffect(() => {
+        // Socket event listeners
+        if (socket) {
+            socket.on('playerJoined', (player) => {
+                setPlayers(prev => [...prev, player])
+                addToast(`${player.fullname} joined`, 'join')
+            })
+
+            socket.on('playerLeft', (playerId, playerName) => {
+                setPlayers(prev => prev.filter(p => p.id !== playerId))
+                addToast(`${playerName} left`, 'leave')
+            })
+
+            socket.on('startMatch', () => {
+                setShowStartingModal(true)
+                setTimeout(() => {
+                    console.log('Navigating to match...')
+                }, 2500)
+            })
+
+            return () => {
+                socket.close()
+            }
+        }
+    }, [socket])
+
 
     const addToast = (message, type) => {
         const id = toastIdRef.current++
         const newToast = { id, message, type }
         setToasts(prev => [...prev, newToast])
-        
+
         // Auto-remove toast after 3 seconds
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id))
@@ -85,33 +89,32 @@ function Room() {
     }
 
     const isCurrentUser = (player) => {
-        return player.name === currentUser.name
+        return player.fullname === currentUser.fullname
     }
 
-    const PlayerCard = ({ player }) => (
-        <div className={`relative flex items-center p-3 rounded-lg transition-all duration-200 ${
-            isCurrentUser(player)
-                ? 'bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/50 shadow-lg shadow-blue-500/20'
-                : player.isAdmin 
-                    ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30' 
-                    : 'bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50'
-        }`}>
+    const PlayerCard = ({ player, isAdmin }) => (
+        <div className={`relative flex items-center p-3 rounded-lg transition-all duration-200 ${isCurrentUser(player)
+            ? 'bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/50 shadow-lg shadow-blue-500/20'
+            : isAdmin
+                ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30'
+                : 'bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50'
+            }`}>
             {/* Admin Badge */}
-            {player.isAdmin && (
+            {isAdmin && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                     HOST
                 </div>
             )}
-            
+
             {/* Current User Badge */}
-            {isCurrentUser(player) && !player.isAdmin && (
+            {isCurrentUser(player) && !isAdmin && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                     YOU
                 </div>
             )}
 
             {/* Combined Badge for Admin + Current User */}
-            {isCurrentUser(player) && player.isAdmin && (
+            {isCurrentUser(player) && isAdmin && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                     YOU (HOST)
                 </div>
@@ -119,8 +122,8 @@ function Room() {
 
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
                 <img
-                    src={getDiceBearAvatar(player.name, player.avatar)}
-                    alt={player.name}
+                    src={getDiceBearAvatar(player.fullname, player.avatar)}
+                    alt={player.fullname}
                     className="w-full h-full"
                     onError={(e) => {
                         e.target.style.display = 'none'
@@ -128,19 +131,18 @@ function Room() {
                     }}
                 />
                 <div className="hidden w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 items-center justify-center text-white text-sm font-bold">
-                    {getInitials(player.name)}
+                    {getInitials(player.fullname)}
                 </div>
             </div>
             <div className="flex-1 min-w-0">
-                <p className={`font-medium truncate ${
-                    isCurrentUser(player)
-                        ? 'text-blue-300'
-                        : player.isAdmin ? 'text-purple-300' : 'text-white'
-                }`}>
-                    {player.name}
+                <p className={`font-medium truncate ${isCurrentUser(player)
+                    ? 'text-blue-300'
+                    : isAdmin ? 'text-purple-300' : 'text-white'
+                    }`}>
+                    {player.fullname}
                 </p>
                 <p className="text-xs text-gray-400">
-                    {player.isAdmin ? 'Administrator' : 'Participant'}
+                    {isAdmin ? 'Administrator' : 'Participant'}
                 </p>
             </div>
         </div>
@@ -165,21 +167,16 @@ function Room() {
     )
 
     const Toast = ({ toast }) => (
-        <div className={`flex items-center p-3 rounded-lg shadow-lg border transition-all duration-300 ${
-            toast.type === 'join' 
-                ? 'bg-green-900/80 border-green-600/50 text-green-200' 
-                : 'bg-red-900/80 border-red-600/50 text-red-200'
-        }`}>
-            <div className={`w-2 h-2 rounded-full mr-3 ${
-                toast.type === 'join' ? 'bg-green-400' : 'bg-red-400'
-            }`}></div>
+        <div className={`flex items-center p-3 rounded-lg shadow-lg border transition-all duration-300 ${toast.type === 'join'
+            ? 'bg-green-900/80 border-green-600/50 text-green-200'
+            : 'bg-red-900/80 border-red-600/50 text-red-200'
+            }`}>
+            <div className={`w-2 h-2 rounded-full mr-3 ${toast.type === 'join' ? 'bg-green-400' : 'bg-red-400'
+                }`}></div>
             <span className="text-sm font-medium">{toast.message}</span>
         </div>
     )
 
-    // Separate admin from regular players
-    const adminPlayers = players.filter(p => p.isAdmin)
-    const regularPlayers = players.filter(p => !p.isAdmin)
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">
@@ -195,7 +192,7 @@ function Room() {
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="bg-gray-800/70 px-4 py-2 rounded-lg border border-gray-600/50">
-                                <span className="text-2xl font-bold text-white">{regularPlayers.length}</span>
+                                <span className="text-2xl font-bold text-white">{players.length}</span>
                                 <span className="text-gray-400 ml-2">Players</span>
                             </div>
                             <button
@@ -215,13 +212,11 @@ function Room() {
                     {/* Players List */}
                     <div className="lg:col-span-3">
                         {/* Admin Section */}
-                        {adminPlayers.length > 0 && (
+                        {admin && Object.keys(admin).length > 0 && (
                             <div className="mb-6">
                                 <h3 className="text-lg font-semibold text-purple-300 mb-3">Administrator</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {adminPlayers.map(player => (
-                                        <PlayerCard key={player.id} player={player} />
-                                    ))}
+                                    <PlayerCard player={admin} isAdmin />
                                 </div>
                             </div>
                         )}
@@ -229,12 +224,12 @@ function Room() {
                         {/* Regular Players */}
                         <div>
                             <h3 className="text-lg font-semibold text-gray-300 mb-3">
-                                Participants ({regularPlayers.length})
+                                Participants ({players.length})
                             </h3>
                             <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3 pt-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {regularPlayers.map(player => (
-                                        <PlayerCard key={player.id} player={player} />
+                                    {players.map(player => (
+                                        <PlayerCard key={player.id} player={player} isAdmin={false} />
                                     ))}
                                 </div>
                             </div>
@@ -245,16 +240,15 @@ function Room() {
                     <div className="lg:col-span-1">
                         <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 sticky top-6">
                             <h3 className="text-lg font-semibold mb-4">Room Actions</h3>
-                            
+
                             {currentUser.isAdmin && (
                                 <button
                                     onClick={handleStartMatch}
                                     disabled={players.length < 2}
-                                    className={`w-full px-6 py-3 font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4 ${
-                                        players.length >= 2
-                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
-                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                    }`}
+                                    className={`w-full px-6 py-3 font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4 ${players.length >= 2
+                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                        }`}
                                 >
                                     {players.length >= 2 ? 'Start Match' : `Need ${2 - players.length} more player${2 - players.length > 1 ? 's' : ''}`}
                                 </button>
