@@ -31,7 +31,7 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
     )
 }
 
-function Landing() {
+function Landing({ navigation }) {
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
     const [showRulesModal, setShowRulesModal] = useState(false)
@@ -61,11 +61,20 @@ function Landing() {
 
     const handleJoinQuiz = (e) => {
         e.preventDefault()
-        if (formData.fullName.trim()) {
-            // Navigate to room page as participant
-            console.log('Joining quiz with:', { fullName: formData.fullName })
-            // TODO: Implement navigation to room page
-        }
+        fetch(`${process.env.SERVER_URL}/api/room/status`).then(res => {
+            if (res.status == 200) {
+                if (formData.fullName.trim()) {
+                    navigation.navigate('/room')
+                }
+            }
+            return res.text()
+        })
+        .then(data => {
+            console.log('Join quiz response:', data)
+        })
+        .catch(err => {
+            console.error('Error joining quiz:', err)
+        })
     }
 
     const closeModals = () => {
