@@ -7,6 +7,8 @@ import img5 from "../assets/images/img5.jpg"
 import img6 from "../assets/images/img6.jpg"
 import img7 from "../assets/images/img7.jpg"
 import RulesModal from '../components/RulesModal'
+import { SERVER_URL } from '../../constants.js'
+import { useNavigate, useNavigation } from 'react-router'
 
 export const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null
@@ -31,17 +33,18 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
     )
 }
 
-function Landing({ navigation }) {
+function Landing() {
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
     const [showRulesModal, setShowRulesModal] = useState(false)
+    const [showQuizNotReadyModal, setShowQuizNotReadyModal] = useState(false)
     const [formData, setFormData] = useState({
         fullName: '',
         adminPassword: ''
     })
-
-    // Local childhood photos
     const childPhotos = [img1, img2, img3, img4, img5, img6, img7, img1, img2, img3]
+    const navigate = useNavigate()
+    // console.log(navigate)
 
     const handleInputChange = (e) => {
         setFormData({
@@ -53,34 +56,68 @@ function Landing({ navigation }) {
     const handleCreateMatch = (e) => {
         e.preventDefault()
         if (formData.fullName.trim() && formData.adminPassword.trim()) {
-            // Navigate to room page with admin privileges
-            console.log('Creating match with:', formData)
-            // TODO: Implement navigation to room page
+            fetch(`${SERVER_URL}/api/room/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fullname: formData.fullName,
+                    adminPassword: formData.adminPassword
+                })
+            })
+            .then(res => {
+                if (res.status === 200) {
+                    setShowCreateModal(false)
+                    navigate('/room')
+                } else {
+                    return res.text().then(text => { throw new Error(text) })
+                }
+            })
+            .catch(err => {
+                console.error('Error creating match:', err)
+            })
         }
     }
 
     const handleJoinQuiz = (e) => {
         e.preventDefault()
-        fetch(`${process.env.SERVER_URL}/api/room/status`).then(res => {
-            if (res.status == 200) {
-                if (formData.fullName.trim()) {
-                    navigation.navigate('/room')
-                }
-            }
-            return res.text()
-        })
+        console.log("Callles")
+        fetch(`${SERVER_URL}/api/room/status`).then(res => res.json())
         .then(data => {
-            console.log('Join quiz response:', data)
+            if (data.roomCreated) {
+                setShowJoinModal(true)
+            } else {
+                setShowQuizNotReadyModal(true)
+            }
         })
         .catch(err => {
-            console.error('Error joining quiz:', err)
+            console.error('Error checking room status:', err)
+            setShowQuizNotReadyModal(true)
         })
+    }
+
+    const handleJoinQuizSubmit = (e) => {
+        e.preventDefault()
+        if (formData.fullName.trim()) {
+            navigate('/room', {
+                state: {
+                    fullname: formData.fullName
+                }
+            })
+        }
+    }
+
+    const handleRetryQuizStatus = () => {
+        setShowQuizNotReadyModal(false)
+        handleJoinQuiz({ preventDefault: () => {} })
     }
 
     const closeModals = () => {
         setShowCreateModal(false)
         setShowJoinModal(false)
         setShowRulesModal(false)
+        setShowQuizNotReadyModal(false)
         setFormData({ fullName: '', adminPassword: '' })
     }
 
@@ -151,7 +188,7 @@ function Landing({ navigation }) {
                             Create Match
                         </button>
                         <button
-                            onClick={() => setShowJoinModal(true)}
+                            onClick={handleJoinQuiz}
                             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl"
                         >
                             Join Quiz
@@ -219,7 +256,7 @@ function Landing({ navigation }) {
                 onClose={closeModals}
                 title="Join Quiz"
             >
-                <form onSubmit={handleJoinQuiz} className="space-y-4">
+                <form onSubmit={handleJoinQuizSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
                             Full Name *
@@ -250,6 +287,62 @@ function Landing({ navigation }) {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Quiz Not Ready Modal */}
+            <Modal
+                isOpen={showQuizNotReadyModal}
+                onClose={closeModals}
+                title="Quiz Not Available"
+            >
+                <div className="text-center">
+                    {/* Icon */}
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-500/20 rounded-full mb-4">
+                        <div className="text-3xl animate-pulse">⏳</div>
+                    </div>
+                    
+                    {/* Main Message */}
+                    <h3 className="text-xl font-bold text-white mb-3">
+                        Quiz Not Created Yet
+                    </h3>
+                    
+                    {/* Description */}
+                    <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                            The quiz has not been created yet. Please wait for an admin to set up the quiz or contact them to get started.
+                        </p>
+                    </div>
+
+                    {/* Loading indicator */}
+                    <div className="flex justify-center mb-6">
+                        <div className="flex space-x-2">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={handleRetryQuizStatus}
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+                        >
+                            🔄 Check Again
+                        </button>
+                        <button
+                            onClick={closeModals}
+                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg font-medium transition-colors"
+                        >
+                            ❌ Close
+                        </button>
+                    </div>
+
+                    {/* Help Text */}
+                    <p className="text-xs text-gray-500 mt-4">
+                        Contact the quiz administrator if this issue persists
+                    </p>
+                </div>
             </Modal>
 
             {/* Rules Modal */}

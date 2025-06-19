@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { json } from 'express'
 import cors from 'cors'
 import { Server } from 'socket.io'
 import http from "http"
@@ -8,6 +8,7 @@ const server = http.createServer(app)
 const io = new Server(server)
 
 app.use(cors())
+app.use(json())
 
 // Constants and variables
 const ROOM_ID = "bca-farewell-2025"
@@ -18,7 +19,7 @@ let roomCreated = false;
 
 // APIs
 app.get("/api/room/status", (req, res) => {
-    res.json({ roomCreated })
+    res.status(200).json({ roomCreated })
 })
 
 app.post("/api/room/create", (req, res) => {
@@ -26,6 +27,7 @@ app.post("/api/room/create", (req, res) => {
     if(adminPassword == "nokia1234ABCD") {
         roomAdmin.fullname = fullname
         roomAdmin.avatar = "adventurer"
+        roomCreated = true
         res.status(200).send("Authenticated")
     }
     res.status(402).send("Authorization error")
