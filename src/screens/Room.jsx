@@ -89,10 +89,6 @@ function Room() {
         }
     }
 
-    // const getInitials = (name) => {
-    //     return name.split(' ').map(n => n[0]).join('').toUpperCase()
-    // }
-
     const getDiceBearAvatar = (seed, variant = 'adventurer') => {
         return `https://api.dicebear.com/7.x/${variant}/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
     }
