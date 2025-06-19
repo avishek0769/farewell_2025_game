@@ -2,49 +2,58 @@ import { useState, useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import RulesModal from '../components/RulesModal'
 import { SERVER_URL } from '../../constants'
+import { useLocation } from 'react-router'
 
 function Room() {
     const [socket, setSocket] = useState(null)
     const [players, setPlayers] = useState([])
     const [admin, setAdmin] = useState()
-    const [currentUser, setCurrentUser] = useState({ name: 'Lol Adhikary', isAdmin: true }) // Changed to match a player
+    const [currentUser, setCurrentUser] = useState({})
     const [showRulesModal, setShowRulesModal] = useState(false)
     const [showStartingModal, setShowStartingModal] = useState(false)
     const [toasts, setToasts] = useState([])
     const toastIdRef = useRef(0)
+    const isSocketConnectedRef = useRef(false)
+    const route = useLocation()
+    const { fullname, isAdmin } = route.state
 
     useEffect(() => {
+        if(isSocketConnectedRef.current) return;
+        isSocketConnectedRef.current = true
+
         const newSocket = io(SERVER_URL)
         setSocket(newSocket)
 
-        // newSocket.emit("joinRoom", {
-        //     fullname: currentUser.fullname,
-        // })
-
+        // Join the room
+        newSocket.emit("joinRoom", { fullname, isAdmin })
+        setCurrentUser({ id: newSocket.id, fullname, isAdmin })
+        
         // Get all participants
         fetch(`${SERVER_URL}/api/room/getUsers`).then(res => res.json())
         .then(data => {
             setPlayers(data)
         })
         .catch(err => console.error('Error fetching players:', err))
-
+        
         // Get admin details
         fetch(`${SERVER_URL}/api/room/getAdmin`).then(res => res.json())
         .then(data => {
             setAdmin(data)
         })
-        .catch(err => console.error('Error fetching admin:', err))
+        .catch(err => console.error('Error fetching admin:', err))        
     }, [])
 
     useEffect(() => {
         // Socket event listeners
         if (socket) {
+            console.log(socket.id)
             socket.on('playerJoined', (player) => {
+                console.log(player)
                 setPlayers(prev => [...prev, player])
                 addToast(`${player.fullname} joined`, 'join')
             })
 
-            socket.on('playerLeft', (playerId, playerName) => {
+            socket.on('playerLeft', ({ playerId, playerName }) => {
                 setPlayers(prev => prev.filter(p => p.id !== playerId))
                 addToast(`${playerName} left`, 'leave')
             })
@@ -80,16 +89,16 @@ function Room() {
         }
     }
 
-    const getInitials = (name) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase()
-    }
+    // const getInitials = (name) => {
+    //     return name.split(' ').map(n => n[0]).join('').toUpperCase()
+    // }
 
     const getDiceBearAvatar = (seed, variant = 'adventurer') => {
         return `https://api.dicebear.com/7.x/${variant}/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
     }
 
     const isCurrentUser = (player) => {
-        return player.fullname === currentUser.fullname
+        return player.id === currentUser.id
     }
 
     const PlayerCard = ({ player, isAdmin }) => (
@@ -130,9 +139,9 @@ function Room() {
                         e.target.nextSibling.style.display = 'flex'
                     }}
                 />
-                <div className="hidden w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 items-center justify-center text-white text-sm font-bold">
+                {/* <div className="hidden w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 items-center justify-center text-white text-sm font-bold">
                     {getInitials(player.fullname)}
-                </div>
+                </div> */}
             </div>
             <div className="flex-1 min-w-0">
                 <p className={`font-medium truncate ${isCurrentUser(player)

@@ -56,15 +56,26 @@ io.on("connection", (socket) => {
 
     // Join a room
     socket.on("joinRoom", (data) => {
-        const { fullname } = data;
-        socket.emit("playerJoined", { fullname })
+        const { fullname, isAdmin } = data;
         socket.join(ROOM_ID)
-        let randomNum = Math.floor(Math.random() * 6)
-        users.push({
-            id: socket.id,
-            fullname,
-            avatar: ['adventurer', 'avataaars', 'bottts', 'croodles', 'micah', 'personas'][randomNum]
+        
+        if(!isAdmin){
+            let randomNum = Math.floor(Math.random() * 6);
+            const newUser = {
+                id: socket.id,
+                fullname,
+                avatar: ['adventurer', 'avataaars', 'bottts', 'croodles', 'micah', 'personas'][randomNum]
+            }
+            io.to(ROOM_ID).emit("playerJoined", newUser)
+            users.push(newUser)
+        }
+
+        io.in(ROOM_ID).fetchSockets().then(sockets => {
+            for (const socket of sockets) {
+                console.log(socket.id)
+            }
         })
+        console.log()
     })
 
     // Leaving a room
@@ -74,7 +85,7 @@ io.on("connection", (socket) => {
             if (user.id == socket.id) userLeft = user;
             else return true
         })
-        userLeft && socket.emit("playerLeft", { fullname: userLeft.fullname })
+        userLeft && io.to(ROOM_ID).emit("playerLeft", { playerId: socket.id, playerName: userLeft.fullname })
     })
 })
 

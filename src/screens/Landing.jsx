@@ -69,7 +69,12 @@ function Landing() {
             .then(res => {
                 if (res.status === 200) {
                     setShowCreateModal(false)
-                    navigate('/room')
+                    navigate('/room', {
+                        state: {
+                            fullname: formData.fullName,
+                            isAdmin: true
+                        }
+                    })
                 } else {
                     return res.text().then(text => { throw new Error(text) })
                 }
@@ -101,7 +106,8 @@ function Landing() {
         if (formData.fullName.trim()) {
             navigate('/room', {
                 state: {
-                    fullname: formData.fullName
+                    fullname: formData.fullName,
+                    isAdmin: false
                 }
             })
         }
