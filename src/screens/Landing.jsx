@@ -7,7 +7,7 @@ import img5 from "../assets/images/img5.jpg"
 import img6 from "../assets/images/img6.jpg"
 import img7 from "../assets/images/img7.jpg"
 import RulesModal from '../components/RulesModal'
-import { SERVER_URL } from '../../constants.js'
+import { SERVER_URL } from '../constants.js'
 import { useNavigate, useNavigation } from 'react-router'
 
 export const Modal = ({ isOpen, onClose, title, children }) => {

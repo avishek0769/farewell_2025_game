@@ -46,6 +46,11 @@ app.get("/api/room/getAdmin", (req, res) => {
     res.status(200).json(roomAdmin)
 })
 
+app.get("/api/user/getTotalScore", (req, res) => {
+    const { fullname } = req.query
+
+})
+
 // Socket Events
 io.on("connection", (socket) => {
     // Create a room

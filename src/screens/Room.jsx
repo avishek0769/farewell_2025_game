@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
 import { io } from 'socket.io-client'
 import RulesModal from '../components/RulesModal'
-import { SERVER_URL } from '../../constants'
+import { SERVER_URL } from '../constants'
 import { useLocation, useNavigate } from 'react-router'
+import { Context } from '../ContextProvider'
 
 function Room() {
-    const [socket, setSocket] = useState(null)
+    const { socket, setSocket } = useContext(Context)
     const [players, setPlayers] = useState([])
     const [admin, setAdmin] = useState()
     const [currentUser, setCurrentUser] = useState({})

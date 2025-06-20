@@ -5,6 +5,7 @@ import Landing from './screens/Landing';
 import Room from './screens/Room';
 import Match from './screens/Match';
 import Result from './screens/Result';
+import ContextProvider from './ContextProvider';
 
 let router = createBrowserRouter([
     {
@@ -30,7 +31,9 @@ function App() {
     const [count, setCount] = useState(0)
 
     return (
-        <RouterProvider router={router} />
+        <ContextProvider>
+            <RouterProvider router={router} />
+        </ContextProvider>
     )
 }
 

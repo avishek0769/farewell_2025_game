@@ -10,7 +10,7 @@ import img7 from "../assets/images/img7.jpg"
 import { useLocation, useNavigate } from 'react-router'
 
 function Match() {
-    const [socket, setSocket] = useState(null)
+    const { socket } = useContext(Context)
     const [totalRounds] = useState(10)
     const [timeLeft, setTimeLeft] = useState(10)
     const [participants, setParticipants] = useState(65)
@@ -273,7 +273,6 @@ function Match() {
     }, [selectedOption, currentQuestion])
 
     const startNextRound = useCallback(() => {
-        console.log("Called")
         setIsTransitioning(true)
         localStorage.removeItem("selectedOption")
         localStorage.removeItem("pointsEarned")
