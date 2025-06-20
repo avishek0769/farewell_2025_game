@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import RulesModal from '../components/RulesModal'
 import { SERVER_URL } from '../../constants'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 function Room() {
     const [socket, setSocket] = useState(null)
@@ -14,6 +14,7 @@ function Room() {
     const [toasts, setToasts] = useState([])
     const toastIdRef = useRef(0)
     const isSocketConnectedRef = useRef(false)
+    const navigate = useNavigate()
     const route = useLocation()
     const { fullname, isAdmin } = route.state
 
@@ -58,11 +59,11 @@ function Room() {
                 addToast(`${playerName} left`, 'leave')
             })
 
-            socket.on('startMatch', () => {
+            socket.on('startingMatch', () => {
                 setShowStartingModal(true)
                 setTimeout(() => {
-                    console.log('Navigating to match...')
-                }, 2500)
+                    navigate("/match")
+                }, 1500)
             })
 
             return () => {
@@ -85,7 +86,7 @@ function Room() {
 
     const handleStartMatch = () => {
         if (socket && currentUser.isAdmin) {
-            socket.emit('startMatch', { roomId: "lol" })
+            socket.emit('startMatch')
         }
     }
 

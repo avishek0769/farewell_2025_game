@@ -78,7 +78,7 @@ io.on("connection", (socket) => {
         console.log()
     })
 
-    // Leaving a room
+    // Leave a room
     socket.on("disconnect", (data) => {
         let userLeft;
         users = users.filter(user => {
@@ -86,6 +86,11 @@ io.on("connection", (socket) => {
             else return true
         })
         userLeft && io.to(ROOM_ID).emit("playerLeft", { playerId: socket.id, playerName: userLeft.fullname })
+    })
+
+    // Start Match
+    socket.on("startMatch", () => {
+        io.to(ROOM_ID).emit("startingMatch")
     })
 })
 

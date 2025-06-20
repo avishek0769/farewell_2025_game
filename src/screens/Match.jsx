@@ -1,23 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { io } from 'socket.io-client'
-import img2 from '../assets/images/img2.jpg'
+import img1 from "../assets/images/img1.jpg"
+import img2 from "../assets/images/img2.jpg"
+import img3 from "../assets/images/img3.jpg"
+import img4 from "../assets/images/img4.jpg"
+import img5 from "../assets/images/img5.jpg"
+import img6 from "../assets/images/img6.jpg"
+import img7 from "../assets/images/img7.jpg"
+import { useNavigate } from 'react-router'
 
 function Match() {
     const [socket, setSocket] = useState(null)
-    const [currentRound, setCurrentRound] = useState(3)
     const [totalRounds] = useState(15)
-    const [timeLeft, setTimeLeft] = useState(60)
+    const [timeLeft, setTimeLeft] = useState(10)
     const [participants, setParticipants] = useState(65)
     const [answered, setAnswered] = useState(28)
     const [selectedOption, setSelectedOption] = useState(null)
     const [showResults, setShowResults] = useState(false) //lsl
     const [pointsEarned, setPointsEarned] = useState(0)
-    const [totalPoints, setTotalPoints] = useState(142)
-    const [showConfetti, setShowConfetti] = useState(false)
-    const [currentUser] = useState({ name: 'Alice Johnson', isAdmin: true })
-    const [nextRoundTimer, setNextRoundTimer] = useState(60)
+    const [totalPoints, setTotalPoints] = useState(0)
+    const [currentUser, setCurrentUser] = useState({ name: 'Alice Johnson', isAdmin: false })
+    const [currentQuestion, setCurrentQuestion] = useState(0)
+    const [nextRoundTimer, setNextRoundTimer] = useState(6)
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isPortrait, setIsPortrait] = useState(false);
+    const navigate = useNavigate()
 
     const timerRef = useRef(null)
     const nextRoundRef = useRef(null)
@@ -28,18 +35,121 @@ function Match() {
         setIsPortrait(isPortraitImg);
     };
 
-    // Mock question data
-    const [questionData] = useState({
-        photo: img2,
-        options: [
-            { id: 1, name: 'Avishek Adhikary', votes: 15 },
-            { id: 2, name: 'Avishek Adhikary', votes: 8 },
-            { id: 3, name: 'Avishek Adhikary', votes: 12 },
-            { id: 4, name: 'Avishek Adhikary', votes: 18 },
-            { id: 5, name: 'Avishek Adhikary', votes: 12 }
-        ],
-        correctAnswer: 4 // David Brown
-    })
+    // Add static questions data
+    const [questionData] = useState([
+        {
+            id: 1,
+            photo: img1,
+            options: [
+                { id: 'a', name: 'Alex Johnson', isCorrect: true },
+                { id: 'b', name: 'Sarah Chen', isCorrect: false },
+                { id: 'c', name: 'Mike Rodriguez', isCorrect: false },
+                { id: 'd', name: 'Emma Wilson', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 2,
+            photo: img2,
+            options: [
+                { id: 'a', name: 'David Kim', isCorrect: false },
+                { id: 'b', name: 'Lisa Thompson', isCorrect: true },
+                { id: 'c', name: 'Ryan O\'Connor', isCorrect: false },
+                { id: 'd', name: 'Maya Patel', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 3,
+            photo: img3,
+            options: [
+                { id: 'a', name: 'John Smith', isCorrect: false },
+                { id: 'b', name: 'Jane Doe', isCorrect: false },
+                { id: 'c', name: 'Mike Rodriguez', isCorrect: true },
+                { id: 'd', name: 'Anna Williams', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 4,
+            photo: img4,
+            options: [
+                { id: 'a', name: 'Tom Wilson', isCorrect: false },
+                { id: 'b', name: 'Emma Wilson', isCorrect: true },
+                { id: 'c', name: 'Chris Brown', isCorrect: false },
+                { id: 'd', name: 'Amy Davis', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 5,
+            photo: img5,
+            options: [
+                { id: 'a', name: 'Kevin Lee', isCorrect: false },
+                { id: 'b', name: 'Sophie Miller', isCorrect: false },
+                { id: 'c', name: 'David Kim', isCorrect: true },
+                { id: 'd', name: 'Rachel Green', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 6,
+            photo: img6,
+            options: [
+                { id: 'a', name: 'Mark Taylor', isCorrect: false },
+                { id: 'b', name: 'Lisa Thompson', isCorrect: true },
+                { id: 'c', name: 'Peter Parker', isCorrect: false },
+                { id: 'd', name: 'Diana Prince', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 7,
+            photo: img7,
+            options: [
+                { id: 'a', name: 'Ryan O\'Connor', isCorrect: true },
+                { id: 'b', name: 'Steve Rogers', isCorrect: false },
+                { id: 'c', name: 'Tony Stark', isCorrect: false },
+                { id: 'd', name: 'Bruce Banner', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 8,
+            photo: img1,
+            options: [
+                { id: 'a', name: 'Natasha Romanoff', isCorrect: false },
+                { id: 'b', name: 'Maya Patel', isCorrect: true },
+                { id: 'c', name: 'Wanda Maximoff', isCorrect: false },
+                { id: 'd', name: 'Carol Danvers', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 9,
+            photo: img2,
+            options: [
+                { id: 'a', name: 'James Wilson', isCorrect: true },
+                { id: 'b', name: 'Robert Johnson', isCorrect: false },
+                { id: 'c', name: 'William Brown', isCorrect: false },
+                { id: 'd', name: 'Michael Davis', isCorrect: false }
+            ],
+            correctAnswer: 'a'
+        },
+        {
+            id: 10,
+            photo: img3,
+            options: [
+                { id: 'a', name: 'Jennifer Lopez', isCorrect: false },
+                { id: 'b', name: 'Amanda Clarke', isCorrect: false },
+                { id: 'c', name: 'Jessica Jones', isCorrect: false },
+                { id: 'd', name: 'Sarah Chen', isCorrect: true }
+            ],
+            correctAnswer: 'a'
+        }
+    ])
+
+    let currentQuestionData = questionData[currentQuestion]
 
     useEffect(() => {
         // Initialize socket connection
@@ -89,6 +199,7 @@ function Match() {
 
     useEffect(() => {
         if (showResults) {
+            setTotalPoints(prev => prev + pointsEarned)
             nextRoundRef.current = setInterval(() => {
                 setNextRoundTimer(prev => {
                     if (prev <= 1) {
@@ -101,60 +212,71 @@ function Match() {
         }
 
         return () => clearInterval(nextRoundRef.current)
-    }, [showResults])
+    }, [showResults, setTotalPoints, pointsEarned])
 
     const handleOptionSelect = (optionId) => {
         if (selectedOption || showResults) return
 
         setSelectedOption(optionId)
         setAnswered(prev => prev + 1)
-
-        if (socket) {
-            socket.emit('selectAnswer', {
-                roundId: currentRound,
-                optionId,
-                timeLeft
-            })
-        }
     }
 
-    const handleTimeUp = () => {
-        setShowResults(true)
-        calculatePoints()
-    }
-
-    const calculatePoints = () => {
+    const calculatePoints = useCallback(() => {
+        console.log("Selected option --> ", selectedOption)
         if (!selectedOption) {
             setPointsEarned(0)
-            return
+            return 0
         }
-
-        const isCorrect = selectedOption === questionData.correctAnswer
+        const isCorrect = selectedOption === currentQuestionData.correctAnswer
         if (isCorrect) {
             const points = timeLeft > 0 ? timeLeft : 1
             setPointsEarned(points)
-            setTotalPoints(prev => prev + points)
-            setShowConfetti(true)
-            setTimeout(() => setShowConfetti(false), 3000)
-        } else {
-            setPointsEarned(-10)
-            setTotalPoints(prev => prev - 10)
+            return points
         }
+        else {
+            setPointsEarned(-10)
+            return -10
+        }
+    }, [selectedOption, currentQuestionData, timeLeft])
+
+    useEffect(() => {
+        if (selectedOption) {
+            console.log({
+                questionId: questionData[currentQuestion].id,
+                selectedOption: selectedOption || null,
+                isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
+                score: calculatePoints()
+            })
+            // if (socket) {
+            //     socket.emit('selectAnswer', {
+            //     })
+            // }
+        }
+    }, [selectedOption, currentQuestion])
+
+    const handleTimeUp = () => {
+        setShowResults(true)
     }
 
-    const startNextRound = () => {
+    const startNextRound = useCallback(() => {
         setIsTransitioning(true)
         setTimeout(() => {
-            setCurrentRound(prev => prev + 1)
-            setTimeLeft(60)
-            setSelectedOption(null)
-            setShowResults(false)
-            setPointsEarned(0)
-            setNextRoundTimer(6)
-            setIsTransitioning(false)
-            setAnswered(0)
+            if (currentQuestion < questionData.length) {
+                setCurrentQuestion(prev => prev + 1)
+                setTimeLeft(60)
+                setSelectedOption(null)
+                setShowResults(false)
+                setPointsEarned(0)
+                setNextRoundTimer(6)
+                setIsTransitioning(false)
+                setAnswered(0)
+            }
+            else {
+                // finishQuiz()
+                navigate("/result")
+            }
         }, 500)
-    }
+    }, [currentQuestion, navigate, pointsEarned])
 
     const handleForceNext = () => {
         if (socket && currentUser.isAdmin) {
@@ -163,16 +285,16 @@ function Match() {
     }
 
     const getOptionPercentage = (votes) => {
-        const totalVotes = questionData.options.reduce((sum, opt) => sum + opt.votes, 0)
+        const totalVotes = currentQuestionData.options.reduce((sum, opt) => sum + opt.votes, 0)
         return totalVotes > 0 ? (votes / totalVotes) * 100 : 0
     }
 
     const getOptionColor = (optionId) => {
         if (!showResults) return 'bg-gray-700 hover:bg-gray-600'
 
-        if (optionId === questionData.correctAnswer) {
+        if (optionId === currentQuestionData.correctAnswer) {
             return 'bg-green-600'
-        } else if (optionId === selectedOption && optionId !== questionData.correctAnswer) {
+        } else if (optionId === selectedOption && optionId !== currentQuestionData.correctAnswer) {
             return 'bg-red-600'
         } else {
             return 'bg-gray-600'
@@ -180,33 +302,14 @@ function Match() {
     }
 
     const getProgressBarColor = (optionId) => {
-        if (optionId === questionData.correctAnswer) {
+        if (optionId === currentQuestionData.correctAnswer) {
             return 'bg-green-500'
-        } else if (optionId === selectedOption && optionId !== questionData.correctAnswer) {
+        } else if (optionId === selectedOption && optionId !== currentQuestionData.correctAnswer) {
             return 'bg-red-500'
         } else {
             return 'bg-blue-400'
         }
     }
-
-    const Confetti = () => (
-        <div className="fixed inset-0 pointer-events-none z-50">
-            {Array.from({ length: 50 }).map((_, i) => (
-                <div
-                    key={i}
-                    className="absolute animate-bounce"
-                    style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                        animationDuration: `${1 + Math.random()}s`
-                    }}
-                >
-                    🎉
-                </div>
-            ))}
-        </div>
-    )
 
     const ProgressBar = ({ current, total }) => (
         <div className="w-full bg-gray-700 rounded-full h-1.5">
@@ -264,9 +367,9 @@ function Match() {
                     <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                             <h1 className={`text-lg ${currentUser.isAdmin ? "sm:text-3xl" : "sm:text-xl"} font-bold text-white mb-1`}>
-                                Round {currentRound} of {totalRounds}
+                                Round {currentQuestion + 1} of {totalRounds}
                             </h1>
-                            <ProgressBar current={currentRound - 1} total={totalRounds} />
+                            <ProgressBar current={currentQuestion} total={totalRounds} />
                         </div>
 
                         <div className="flex items-center gap-3 ml-4">
@@ -311,9 +414,9 @@ function Match() {
                     {/* Left Section - Round info */}
                     <div className="flex-1 min-w-0">
                         <h1 className={`font-bold text-white mb-1 ${currentUser.isAdmin ? "text-3xl" : "text-xl"}`}>
-                            Round {currentRound} of {totalRounds}
+                            Round {currentQuestion + 1} of {totalRounds}
                         </h1>
-                        <ProgressBar current={currentRound - 1} total={totalRounds} />
+                        <ProgressBar current={currentQuestion} total={totalRounds} />
                     </div>
 
                     {/* Center Section - Stats */}
@@ -367,8 +470,6 @@ function Match() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-white overflow-x-hidden">
-            {showConfetti && <Confetti />}
-
             {/* Compact Header */}
             {!currentUser.isAdmin ? <Header /> : currentUser.isAdmin && !showResults ? <Header /> : null}
 
@@ -383,7 +484,7 @@ function Match() {
                                 <div className={`flex justify-center gap-4 p-4 rounded-lg ${pointsEarned > 0 ? 'bg-green-900/50 border border-green-600/50' : pointsEarned < 0 ? 'bg-red-900/50 border border-red-600/50' : 'bg-gray-800/50 border border-gray-600/50'}`}>
                                     <p className="text-4xl">
                                         It's <span className="font-bold text-green-400">
-                                            {questionData.options.find(opt => opt.id === questionData.correctAnswer)?.name}
+                                            {currentQuestionData.options.find(opt => opt.id === currentQuestionData.correctAnswer)?.name}
                                         </span>
                                     </p>
                                 </div>
@@ -402,7 +503,7 @@ function Match() {
                             <div className="relative inline-block">
                                 <div className={`${showResults ? "w-[44.7rem] h-[25rem]" : "w-[53.2rem] h-[30rem]"} rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700`}>
                                     <img
-                                        src={questionData.photo}
+                                        src={currentQuestionData.photo}
                                         alt="Childhood photo"
                                         onLoad={handleImageLoad}
                                         className={
@@ -427,7 +528,7 @@ function Match() {
 
                         {/* Options - Horizontal Grid */}
                         <div className="grid grid-cols-5 gap-4 max-w-6xl mx-auto">
-                            {questionData.options.map((option) => (
+                            {currentQuestionData.options.map((option) => (
                                 <button
                                     key={option.id}
                                     onClick={() => handleOptionSelect(option.id)}
@@ -488,7 +589,7 @@ function Match() {
                                     </h3>
                                     <p className="text-xl mb-2">
                                         It's <span className="font-bold text-green-400">
-                                            {questionData.options.find(opt => opt.id === questionData.correctAnswer)?.name}
+                                            {currentQuestionData.options.find(opt => opt.id === currentQuestionData.correctAnswer)?.name}
                                         </span>
                                     </p>
                                     <p className={`text-xl font-bold ${pointsEarned > 0 ? 'text-green-400' : pointsEarned < 0 ? 'text-red-400' : 'text-gray-400'}`}>
@@ -513,7 +614,7 @@ function Match() {
                                     <div className="relative inline-block">
                                         <div className="w-[37.3rem] h-[21rem] rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700">
                                             <img
-                                                src={questionData.photo}
+                                                src={currentQuestionData.photo}
                                                 alt="Childhood photo"
                                                 onLoad={handleImageLoad}
                                                 className={
@@ -535,7 +636,7 @@ function Match() {
                             {/* Right Side - Options */}
                             <div className="flex-1 min-w-0">
                                 <div className="space-y-4">
-                                    {questionData.options.map((option) => (
+                                    {currentQuestionData.options.map((option) => (
                                         <button
                                             key={option.id}
                                             onClick={() => handleOptionSelect(option.id)}
@@ -600,7 +701,7 @@ function Match() {
                                 <div className="relative inline-block">
                                     <div className="w-[21.1rem] h-[12rem] sm:w-64 sm:h-64 mx-auto rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700">
                                         <img
-                                            src={questionData.photo}
+                                            src={currentQuestionData.photo}
                                             alt="Childhood photo"
                                             onLoad={handleImageLoad}
                                             className={
@@ -620,7 +721,7 @@ function Match() {
 
                             {/* Options - Mobile */}
                             <div className="space-y-3 mb-6">
-                                {questionData.options.map((option) => (
+                                {currentQuestionData.options.map((option) => (
                                     <button
                                         key={option.id}
                                         onClick={() => handleOptionSelect(option.id)}
