@@ -62,7 +62,12 @@ function Room() {
             socket.on('startingMatch', () => {
                 setShowStartingModal(true)
                 setTimeout(() => {
-                    navigate("/match")
+                    navigate("/match", {
+                        state: {
+                            fullname: currentUser.fullname,
+                            isAdmin: currentUser.isAdmin
+                        }
+                    })
                 }, 1500)
             })
 

@@ -7,7 +7,7 @@ import img4 from "../assets/images/img4.jpg"
 import img5 from "../assets/images/img5.jpg"
 import img6 from "../assets/images/img6.jpg"
 import img7 from "../assets/images/img7.jpg"
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 function Match() {
     const [socket, setSocket] = useState(null)
@@ -19,21 +19,17 @@ function Match() {
     const [showResults, setShowResults] = useState(false) //lsl
     const [pointsEarned, setPointsEarned] = useState(0)
     const [totalPoints, setTotalPoints] = useState(0)
-    const [currentUser, setCurrentUser] = useState({ name: 'Alice Johnson', isAdmin: false })
+    const [currentUser, setCurrentUser] = useState({ fullname: 'Alice Johnson', isAdmin: false })
     const [currentQuestion, setCurrentQuestion] = useState(0)
     const [nextRoundTimer, setNextRoundTimer] = useState(6)
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isPortrait, setIsPortrait] = useState(false);
     const navigate = useNavigate()
+    const route = useLocation()
+    const { fullname, isAdmin } = route
 
     const timerRef = useRef(null)
     const nextRoundRef = useRef(null)
-
-    useEffect(() => {
-        console.log(currentQuestion)
-    }, [currentQuestion])
-
-
 
     const handleImageLoad = (e) => {
         const img = e.target;
@@ -157,7 +153,23 @@ function Match() {
 
     let currentQuestionData = questionData[currentQuestion]
 
+    // All preserved states fetched from backend or local storage 
     useEffect(() => {
+        // Selected option 
+        const localSelectedOption = localStorage.getItem("selectedOption")
+        if(localSelectedOption) {
+            setSelectedOption(localSelectedOption)
+        }
+        // Points earned
+        const pointsEarned = localStorage.getItem("pointsEarned")
+        setPointsEarned(Number(pointsEarned))
+
+    }, [])
+
+
+    useEffect(() => {
+        setCurrentUser({ fullname, isAdmin })
+
         // Initialize socket connection
         const newSocket = io(null)
         setSocket(newSocket)
@@ -223,6 +235,7 @@ function Match() {
     const handleOptionSelect = (optionId) => {
         if (selectedOption || showResults) return
 
+        localStorage.setItem("selectedOption", optionId)
         setSelectedOption(optionId)
         setAnswered(prev => prev + 1)
     }
@@ -246,12 +259,14 @@ function Match() {
 
     useEffect(() => {
         if (selectedOption) {
+            let pointsEarned = calculatePoints()
+            localStorage.setItem("pointsEarned", pointsEarned)
             if (socket) {
                 socket.emit('selectAnswer', {
                     questionId: questionData[currentQuestion].id,
                     selectedOption: selectedOption || null,
                     isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
-                    score: calculatePoints()
+                    score: pointsEarned
                 })
             }
         }
@@ -260,6 +275,9 @@ function Match() {
     const startNextRound = useCallback(() => {
         console.log("Called")
         setIsTransitioning(true)
+        localStorage.removeItem("selectedOption")
+        localStorage.removeItem("pointsEarned")
+
         setTimeout(() => {
             if (currentQuestion < questionData.length) {
                 setCurrentQuestion(prev => prev + 1)
