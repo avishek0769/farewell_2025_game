@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router'
 
 function Match() {
     const [socket, setSocket] = useState(null)
-    const [totalRounds] = useState(15)
+    const [totalRounds] = useState(10)
     const [timeLeft, setTimeLeft] = useState(10)
     const [participants, setParticipants] = useState(65)
     const [answered, setAnswered] = useState(28)
@@ -28,6 +28,12 @@ function Match() {
 
     const timerRef = useRef(null)
     const nextRoundRef = useRef(null)
+
+    useEffect(() => {
+        console.log(currentQuestion)
+    }, [currentQuestion])
+
+
 
     const handleImageLoad = (e) => {
         const img = e.target;
@@ -186,7 +192,7 @@ function Match() {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        handleTimeUp()
+                        setShowResults(true) // Handle time up
                         return 0
                     }
                     return prev - 1
@@ -222,7 +228,6 @@ function Match() {
     }
 
     const calculatePoints = useCallback(() => {
-        console.log("Selected option --> ", selectedOption)
         if (!selectedOption) {
             setPointsEarned(0)
             return 0
@@ -241,24 +246,19 @@ function Match() {
 
     useEffect(() => {
         if (selectedOption) {
-            console.log({
-                questionId: questionData[currentQuestion].id,
-                selectedOption: selectedOption || null,
-                isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
-                score: calculatePoints()
-            })
-            // if (socket) {
-            //     socket.emit('selectAnswer', {
-            //     })
-            // }
+            if (socket) {
+                socket.emit('selectAnswer', {
+                    questionId: questionData[currentQuestion].id,
+                    selectedOption: selectedOption || null,
+                    isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
+                    score: calculatePoints()
+                })
+            }
         }
     }, [selectedOption, currentQuestion])
 
-    const handleTimeUp = () => {
-        setShowResults(true)
-    }
-
     const startNextRound = useCallback(() => {
+        console.log("Called")
         setIsTransitioning(true)
         setTimeout(() => {
             if (currentQuestion < questionData.length) {
@@ -276,7 +276,7 @@ function Match() {
                 navigate("/result")
             }
         }, 500)
-    }, [currentQuestion, navigate, pointsEarned])
+    }, [navigate, pointsEarned])
 
     const handleForceNext = () => {
         if (socket && currentUser.isAdmin) {
@@ -369,7 +369,7 @@ function Match() {
                             <h1 className={`text-lg ${currentUser.isAdmin ? "sm:text-3xl" : "sm:text-xl"} font-bold text-white mb-1`}>
                                 Round {currentQuestion + 1} of {totalRounds}
                             </h1>
-                            <ProgressBar current={currentQuestion} total={totalRounds} />
+                            <ProgressBar current={currentQuestion + 1} total={totalRounds} />
                         </div>
 
                         <div className="flex items-center gap-3 ml-4">
