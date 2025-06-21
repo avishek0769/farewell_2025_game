@@ -20,6 +20,8 @@ const ROOM_ID = "bca-farewell-2025"
 let users = []
 let roomAdmin = {}
 let roomCreated = false;
+let timer = 0
+let currentQuestionIndex = 0
 
 
 // APIs
@@ -42,13 +44,23 @@ app.get("/api/room/getUsers", (req, res) => {
     res.status(200).json(users)
 })
 
+app.get("/api/room/getUsersCount", (req, res) => {
+    res.status(200).json({ userCount: users.length })
+})
+
 app.get("/api/room/getAdmin", (req, res) => {
     res.status(200).json(roomAdmin)
 })
 
-app.get("/api/user/getTotalScore", (req, res) => {
-    const { fullname } = req.query
+app.get("/api/room/getCurrentQuestionIndex", (req, res) => {
+    res.status(200).json({ currentQuestionIndex })
+})
 
+app.get("/api/user/getTotalScore", (req, res) => {
+    const { socketId } = req.query
+    console.log("Got", socketId)
+    const user = users.find(user => user.id == socketId)
+    if(user) res.status(200).json({ totalScore: user.totalScore })
 })
 
 // Socket Events
@@ -69,6 +81,7 @@ io.on("connection", (socket) => {
             const newUser = {
                 id: socket.id,
                 fullname,
+                totalScore: 0,
                 avatar: ['adventurer', 'avataaars', 'bottts', 'croodles', 'micah', 'personas'][randomNum]
             }
             io.to(ROOM_ID).emit("playerJoined", newUser)

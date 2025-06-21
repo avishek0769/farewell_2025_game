@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react'
 import { io } from 'socket.io-client'
 import img1 from "../assets/images/img1.jpg"
 import img2 from "../assets/images/img2.jpg"
@@ -8,17 +8,19 @@ import img5 from "../assets/images/img5.jpg"
 import img6 from "../assets/images/img6.jpg"
 import img7 from "../assets/images/img7.jpg"
 import { useLocation, useNavigate } from 'react-router'
+import { Context } from '../ContextProvider'
+import { SERVER_URL } from '../constants.js'
 
 function Match() {
-    const { socket } = useContext(Context)
+    const { socket, setSocket } = useContext(Context)
     const [totalRounds] = useState(10)
     const [timeLeft, setTimeLeft] = useState(10)
-    const [participants, setParticipants] = useState(65)
+    const [participants, setParticipants] = useState(650)
     const [answered, setAnswered] = useState(28)
     const [selectedOption, setSelectedOption] = useState(null)
     const [showResults, setShowResults] = useState(false) //lsl
     const [pointsEarned, setPointsEarned] = useState(0)
-    const [totalPoints, setTotalPoints] = useState(0)
+    const [totalPoints, setTotalPoints] = useState(990)
     const [currentUser, setCurrentUser] = useState({ fullname: 'Alice Johnson', isAdmin: false })
     const [currentQuestion, setCurrentQuestion] = useState(0)
     const [nextRoundTimer, setNextRoundTimer] = useState(6)
@@ -155,16 +157,53 @@ function Match() {
 
     // All preserved states fetched from backend or local storage 
     useEffect(() => {
-        // Selected option 
-        const localSelectedOption = localStorage.getItem("selectedOption")
-        if(localSelectedOption) {
-            setSelectedOption(localSelectedOption)
-        }
-        // Points earned
-        const pointsEarned = localStorage.getItem("pointsEarned")
-        setPointsEarned(Number(pointsEarned))
+        if (!socket) {
+            const socket2 = io(SERVER_URL)
+            console.log(socket2)
+            socket2.on("connect", () => {
+                console.log("Socket ID:", socket2.id);
+                setSocket(socket2)
+                socket2.emit('joinRoom', { fullname, isAdmin })
 
-    }, [])
+                // Fetch Total Points
+                fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket2.id}`).then(res => res.json())
+                .then(data => {
+                    console.log(data)
+                    setTotalPoints(data.totalScore)
+                }).catch(err => {
+                    console.error("Error fetching total score:", err)
+                })
+            });
+
+            // Selected option 
+            const localSelectedOption = localStorage.getItem("selectedOption")
+            if (localSelectedOption) {
+                setSelectedOption(localSelectedOption)
+            }
+
+            // Points earned
+            const pointsEarned = localStorage.getItem("pointsEarned")
+            setPointsEarned(Number(pointsEarned))
+
+            // Fetch participants count
+            fetch(`${SERVER_URL}/api/room/getUsersCount`).then(res => res.json())
+            .then(data => {
+                console.log(data)
+                setParticipants(data.userCount)
+            }).catch(err => {
+                console.error("Error fetching participants:", err)
+            })
+
+            // Fetch currentQuestionIndex
+            fetch(`${SERVER_URL}/api/room/getCurrentQuestionIndex`).then(res => res.json())
+            .then(data => {
+                console.log(data)
+                setCurrentQuestion(data.currentQuestionIndex)
+            }).catch(err => {
+                console.error("Error fetching current question index:", err)
+            })
+        }
+    }, [socket])
 
 
     useEffect(() => {
