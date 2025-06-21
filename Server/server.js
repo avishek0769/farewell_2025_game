@@ -12,7 +12,10 @@ const io = new Server(server, {
     }
 });
 
-app.use(cors())
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"]
+}))
 app.use(json())
 
 // Constants and variables
@@ -22,9 +25,11 @@ let roomAdmin = {}
 let roomCreated = false;
 let timer = 0
 let currentQuestionIndex = 0
+let noOfGuessed = 0
 
 
 // APIs
+// Room APIs
 app.get("/api/room/status", (req, res) => {
     res.status(200).json({ roomCreated })
 })
@@ -56,6 +61,11 @@ app.get("/api/room/getCurrentQuestionIndex", (req, res) => {
     res.status(200).json({ currentQuestionIndex })
 })
 
+app.get("/api/room/getNoOfGuessed", (req, res) => {
+    res.status(200).json({ noOfGuessed })
+})
+
+// User APIs
 app.get("/api/user/getTotalScore", (req, res) => {
     const { socketId } = req.query
     console.log("Got", socketId)

@@ -26,12 +26,14 @@ function Match() {
     const [nextRoundTimer, setNextRoundTimer] = useState(6)
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isPortrait, setIsPortrait] = useState(false);
+    const [loadStates, setLoadStates] = useState(0);
     const navigate = useNavigate()
     const route = useLocation()
     const { fullname, isAdmin } = route
 
     const timerRef = useRef(null)
     const nextRoundRef = useRef(null)
+    const statesLoadedRef = useRef(false)
 
     const handleImageLoad = (e) => {
         const img = e.target;
@@ -155,38 +157,70 @@ function Match() {
 
     let currentQuestionData = questionData[currentQuestion]
 
+    useEffect(() => {
+        const socket2 = io(SERVER_URL)
+        setSocket(socket2)
+
+        socket2.on("connect", () => {
+            socket2.emit('joinRoom', { fullname, isAdmin })
+            console.log("socket2 ID:", socket2.id);
+
+            // Fetch Total Points
+            setTimeout(() => {
+                fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket2.id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log(data);
+                        setTotalPoints(data.totalScore);
+                    }).catch(err => {
+                        console.error("Error fetching total score:", err);
+                    });
+            }, 200);
+        });
+
+        // socket2 event listeners
+        socket2.on('questionData', (data) => {
+            // Handle new question data
+        })
+
+        socket2.on('answerSelected', (data) => {
+            setAnswered(data.totalAnswered)
+        })
+
+        socket2.on('roundResults', (data) => {
+            setShowResults(true)
+            calculatePoints(data)
+        })
+
+        socket2.on('nextRound', () => {
+            startNextRound()
+        })
+
+        return () => {
+            clearInterval(timerRef.current)
+            clearInterval(nextRoundRef.current)
+            socket2.close()
+        }
+    }, [])
+
     // All preserved states fetched from backend or local storage 
     useEffect(() => {
-        if (!socket) {
-            const socket2 = io(SERVER_URL)
-            console.log(socket2)
-            socket2.on("connect", () => {
-                console.log("Socket ID:", socket2.id);
-                setSocket(socket2)
-                socket2.emit('joinRoom', { fullname, isAdmin })
+        setCurrentUser({ fullname, isAdmin })
+        if (statesLoadedRef.current) return;
+        statesLoadedRef.current = true;
 
-                // Fetch Total Points
-                fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket2.id}`).then(res => res.json())
-                .then(data => {
-                    console.log(data)
-                    setTotalPoints(data.totalScore)
-                }).catch(err => {
-                    console.error("Error fetching total score:", err)
-                })
-            });
+        // Selected option 
+        const localSelectedOption = localStorage.getItem("selectedOption")
+        if (localSelectedOption) {
+            setSelectedOption(localSelectedOption)
+        }
 
-            // Selected option 
-            const localSelectedOption = localStorage.getItem("selectedOption")
-            if (localSelectedOption) {
-                setSelectedOption(localSelectedOption)
-            }
+        // Points earned
+        const pointsEarned = localStorage.getItem("pointsEarned")
+        setPointsEarned(Number(pointsEarned))
 
-            // Points earned
-            const pointsEarned = localStorage.getItem("pointsEarned")
-            setPointsEarned(Number(pointsEarned))
-
-            // Fetch participants count
-            fetch(`${SERVER_URL}/api/room/getUsersCount`).then(res => res.json())
+        // Fetch participants count
+        fetch(`${SERVER_URL}/api/room/getUsersCount`).then(res => res.json())
             .then(data => {
                 console.log(data)
                 setParticipants(data.userCount)
@@ -194,49 +228,38 @@ function Match() {
                 console.error("Error fetching participants:", err)
             })
 
-            // Fetch currentQuestionIndex
-            fetch(`${SERVER_URL}/api/room/getCurrentQuestionIndex`).then(res => res.json())
+        // Fetch currentQuestionIndex
+        fetch(`${SERVER_URL}/api/room/getCurrentQuestionIndex`).then(res => res.json())
             .then(data => {
                 console.log(data)
                 setCurrentQuestion(data.currentQuestionIndex)
             }).catch(err => {
                 console.error("Error fetching current question index:", err)
             })
+
+        // Fetch noOfGuessed
+        fetch(`${SERVER_URL}/api/room/getNoOfGuessed`).then(res => res.json())
+            .then(data => {
+                console.log(data)
+                setAnswered(data.noOfGuessed)
+            }).catch(err => {
+                console.error("Error fetching no of guessed:", err)
+            })
+
+        // Fetch total score
+        console.log(socket)
+        if(socket){
+            fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+                    setTotalPoints(data.totalScore);
+                }).catch(err => {
+                    console.error("Error fetching total score:", err);
+                });
         }
-    }, [socket])
 
-
-    useEffect(() => {
-        setCurrentUser({ fullname, isAdmin })
-
-        // Initialize socket connection
-        const newSocket = io(null)
-        setSocket(newSocket)
-
-        // Socket event listeners
-        newSocket.on('questionData', (data) => {
-            // Handle new question data
-        })
-
-        newSocket.on('answerSelected', (data) => {
-            setAnswered(data.totalAnswered)
-        })
-
-        newSocket.on('roundResults', (data) => {
-            setShowResults(true)
-            calculatePoints(data)
-        })
-
-        newSocket.on('nextRound', () => {
-            startNextRound()
-        })
-
-        return () => {
-            clearInterval(timerRef.current)
-            clearInterval(nextRoundRef.current)
-            newSocket.close()
-        }
-    }, [])
+    }, [loadStates, socket])
 
     useEffect(() => {
         if (!showResults && timeLeft > 0) {
@@ -312,7 +335,9 @@ function Match() {
     }, [selectedOption, currentQuestion])
 
     const startNextRound = useCallback(() => {
+        statesLoadedRef.current = false;
         setIsTransitioning(true)
+        setLoadStates(prev => prev + 1)
         localStorage.removeItem("selectedOption")
         localStorage.removeItem("pointsEarned")
 
