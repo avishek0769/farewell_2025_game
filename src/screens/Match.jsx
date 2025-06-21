@@ -179,6 +179,10 @@ function Match() {
         });
 
         // socket2 event listeners
+        socket2.on("updatePeopleGuessed", () => {
+            setAnswered(prev => prev + 1)
+        })
+
         socket2.on('questionData', (data) => {
             // Handle new question data
         })
@@ -294,13 +298,13 @@ function Match() {
         return () => clearInterval(nextRoundRef.current)
     }, [showResults, setTotalPoints, pointsEarned])
 
-    const handleOptionSelect = (optionId) => {
+    const handleOptionSelect = useCallback((optionId) => {
         if (selectedOption || showResults) return
 
         localStorage.setItem("selectedOption", optionId)
+        socket.emit("optionSelected", optionId)
         setSelectedOption(optionId)
-        setAnswered(prev => prev + 1)
-    }
+    }, [socket])
 
     const calculatePoints = useCallback(() => {
         if (!selectedOption) {

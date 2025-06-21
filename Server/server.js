@@ -26,6 +26,13 @@ let roomCreated = false;
 let timer = 0
 let currentQuestionIndex = 0
 let noOfGuessed = 0
+let peopleGuessed = {
+    a: 0,
+    b: 0,
+    c: 0,
+    d: 0,
+    e: 0,
+}
 
 
 // APIs
@@ -119,6 +126,13 @@ io.on("connection", (socket) => {
     // Start Match
     socket.on("startMatch", () => {
         io.to(ROOM_ID).emit("startingMatch")
+    })
+
+    // Option Selected
+    socket.on("optionSelected", (optionId) => {
+        peopleGuessed[optionId]++
+        io.to(ROOM_ID).emit("updatePeopleGuessed")
+        console.log(peopleGuessed)
     })
 })
 
