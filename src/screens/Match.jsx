@@ -28,6 +28,7 @@ function Match() {
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isPortrait, setIsPortrait] = useState(false);
     const [loadStates, setLoadStates] = useState(0);
+    const [guessedPercentage, setGuessedPercentage] = useState({});
     const navigate = useNavigate()
     const route = useLocation()
     const { fullname, isAdmin } = route.state
@@ -198,9 +199,9 @@ function Match() {
             setAnswered(data.totalAnswered)
         })
 
-        socket2.on('roundResults', (data) => {
+        socket2.on('roundResults', (peopleGuessed) => {
             setShowResults(true)
-            // calculatePoints(data)
+            setGuessedPercentage(peopleGuessed)
         })
 
         socket2.on('nextRound', () => {
@@ -352,7 +353,7 @@ function Match() {
     }
 
     const getOptionPercentage = (votes) => {
-        const totalVotes = currentQuestionData.options.reduce((sum, opt) => sum + opt.votes, 0)
+        const totalVotes = Object.values(guessedPercentage).reduce((acc, curr) => acc + curr, 0)
         return totalVotes > 0 ? (votes / totalVotes) * 100 : 0
     }
 
@@ -619,13 +620,13 @@ function Match() {
                                         </div>
 
                                         {/* Show percentage in option for admin when results are shown */}
-                                        {showResults && (
+                                        {showResults && guessedPercentage && (
                                             <div className="text-center">
                                                 <span className="text-xl font-bold text-white">
-                                                    {getOptionPercentage(option.votes).toFixed(1)}%
+                                                    {getOptionPercentage(guessedPercentage[option.id]).toFixed(1)}%
                                                 </span>
                                                 <div className="text-sm text-gray-300">
-                                                    ({option.votes} votes)
+                                                    ({guessedPercentage[option.id]} votes)
                                                 </div>
                                             </div>
                                         )}
@@ -726,17 +727,17 @@ function Match() {
                                             </div>
 
                                             {/* Results Bar */}
-                                            {showResults && (
+                                            {showResults && guessedPercentage && (
                                                 <div className="mt-4">
                                                     <div className="flex justify-between text-sm mb-2">
-                                                        <span>{option.votes} guesses</span>
-                                                        <span>{getOptionPercentage(option.votes).toFixed(1)}%</span>
+                                                        <span>{guessedPercentage[option.id]} guesses</span>
+                                                        <span>{getOptionPercentage(guessedPercentage[option.id]).toFixed(1)}%</span>
                                                     </div>
                                                     <div className="w-full bg-gray-800 rounded-full h-3">
                                                         <div
                                                             className={`h-3 rounded-full transition-all duration-1000 ease-out ${getProgressBarColor(option.id)}`}
                                                             style={{
-                                                                width: `${getOptionPercentage(option.votes)}%`,
+                                                                width: `${getOptionPercentage(guessedPercentage[option.id])}%`,
                                                                 transitionDelay: '0.5s'
                                                             }}
                                                         />
@@ -811,17 +812,17 @@ function Match() {
                                         </div>
 
                                         {/* Results Bar - Mobile */}
-                                        {showResults && (
+                                        {showResults && guessedPercentage && (
                                             <div className="mt-3">
                                                 <div className="flex justify-between text-sm mb-1">
-                                                    <span>{option.votes} guesses</span>
-                                                    <span>{getOptionPercentage(option.votes).toFixed(1)}%</span>
+                                                    <span>{guessedPercentage[option.id]} guesses</span>
+                                                    <span>{getOptionPercentage(guessedPercentage[option.id]).toFixed(1)}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-800 rounded-full h-2">
                                                     <div
                                                         className={`h-2 rounded-full transition-all duration-1000 ease-out ${getProgressBarColor(option.id)}`}
                                                         style={{
-                                                            width: `${getOptionPercentage(option.votes)}%`,
+                                                            width: `${getOptionPercentage(guessedPercentage[option.id])}%`,
                                                             transitionDelay: '0.5s'
                                                         }}
                                                     />

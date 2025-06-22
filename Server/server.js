@@ -45,7 +45,6 @@ let peopleGuessed = {
     b: 0,
     c: 0,
     d: 0,
-    e: 0,
 }
 
 function startQuestionLoop() {
@@ -73,7 +72,7 @@ function switchToReveal() {
     timer = REVEAL_TIME;
 
     // Broadcast the correct answer & stats
-    io.to(ROOM_ID).emit('roundResults');
+    io.to(ROOM_ID).emit('roundResults', peopleGuessed);
 }
 
 function nextRound() {
