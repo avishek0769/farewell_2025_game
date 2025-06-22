@@ -13,6 +13,7 @@ import { SERVER_URL } from '../constants.js'
 
 function Match() {
     const { socket, setSocket } = useContext(Context)
+    const [socketConnected, setSocketConnected] = useState(false)
     const [totalRounds] = useState(10)
     const [timeLeft, setTimeLeft] = useState(10)
     const [participants, setParticipants] = useState(650)
@@ -160,8 +161,9 @@ function Match() {
     useEffect(() => {
         const socket2 = io(SERVER_URL)
         setSocket(socket2)
-
+        
         socket2.on("connect", () => {
+            setSocketConnected(true)
             socket2.emit('joinRoom', { fullname, isAdmin })
             console.log("socket2 ID:", socket2.id);
 
@@ -197,6 +199,7 @@ function Match() {
         })
 
         socket2.on('nextRound', () => {
+            setShowResults(false)
             startNextRound()
         })
 
@@ -204,16 +207,20 @@ function Match() {
             setTimeLeft(timer)
         })
 
+        socket2.on("gameFinished", () => {
+            navigate("/result", { state: { totalPoints, fullname, isAdmin } })
+        })
+
         return () => {
             clearInterval(timerRef.current)
             clearInterval(nextRoundRef.current)
             socket2.close()
+            setSocketConnected(false)
         }
     }, [])
 
     // All preserved states fetched from backend or local storage 
     useEffect(() => {
-        console.log(fullname, isAdmin)
         setCurrentUser({ fullname, isAdmin })
         if (statesLoadedRef.current) return;
         statesLoadedRef.current = true;
@@ -228,39 +235,37 @@ function Match() {
         const pointsEarned = localStorage.getItem("pointsEarned")
         setPointsEarned(Number(pointsEarned))
 
-        if (!socket) return;
+        console.log("Socket --> ", socket)
+        if (!socketConnected) return;
         const url = new URL(`${SERVER_URL}/api/room/initialState?socketId=${socket.id}`);
 
         fetch(url)
             .then(r => r.json())
             .then(({ userCount, currentQuestionIndex, noOfGuessed, totalScore, timer, phase }) => {
+                console.log({ userCount, currentQuestionIndex, noOfGuessed, totalScore, timer, phase })
                 setParticipants(userCount);
                 setCurrentQuestion(currentQuestionIndex);
                 setAnswered(noOfGuessed);
                 setTimeLeft(timer)
-                if(phase === 'reveal') showResults(true)
+                phase === 'reveal'? setShowResults(true) : setShowResults(false)
                 if (totalScore !== null) setTotalPoints(totalScore);
             })
             .catch(console.error);
 
-    }, [loadStates, socket])
+    }, [loadStates, socketConnected])
 
-    const startTimer = () => {
+    useEffect(() => {
         if (!showResults && timeLeft > 0) {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        setShowResults(true) // Handle time up
+                        // setShowResults(true)
                         return 0
                     }
                     return prev - 1
                 })
             }, 1000)
         }
-    }
-
-    useEffect(() => {
-        
 
         return () => clearInterval(timerRef.current)
     }, [showResults, timeLeft])
@@ -288,7 +293,7 @@ function Match() {
         localStorage.setItem("selectedOption", optionId)
         socket.emit("optionSelected", optionId)
         setSelectedOption(optionId)
-    }, [socket])
+    }, [socketConnected])
 
     const calculatePoints = useCallback(() => {
         if (!selectedOption) {
@@ -311,7 +316,7 @@ function Match() {
         if (selectedOption) {
             let pointsEarned = calculatePoints()
             localStorage.setItem("pointsEarned", pointsEarned)
-            if (socket) {
+            if (socketConnected) {
                 socket.emit('selectAnswer', {
                     questionId: questionData[currentQuestion].id,
                     selectedOption: selectedOption || null,
@@ -331,24 +336,24 @@ function Match() {
 
         setTimeout(() => {
             if (currentQuestion < questionData.length) {
-                setCurrentQuestion(prev => prev + 1)
-                setTimeLeft(60)
-                setSelectedOption(null)
-                setShowResults(false)
-                setPointsEarned(0)
-                setNextRoundTimer(6)
+                // setCurrentQuestion(prev => prev + 1)
+                // setTimeLeft(60)
+                // setSelectedOption(null)
+                // setShowResults(false)
+                // setPointsEarned(0)
+                // setNextRoundTimer(6)
                 setIsTransitioning(false)
-                setAnswered(0)
+                // setAnswered(0)
             }
             else {
                 // finishQuiz()
-                navigate("/result")
+                // navigate("/result")
             }
         }, 500)
     }, [navigate, pointsEarned])
 
     const handleForceNext = () => {
-        if (socket && currentUser.isAdmin) {
+        if (socketConnected && currentUser.isAdmin) {
             socket.emit('forceNextRound')
         }
     }

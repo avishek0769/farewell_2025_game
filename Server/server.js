@@ -27,7 +27,7 @@ app.use(json())
 
 // Constants and variables
 const ROOM_ID = "bca-farewell-2025"
-const QUESTION_TIME = 60;
+const QUESTION_TIME = 10;
 const REVEAL_TIME = 6;
 const TOTAL_QUESTIONS = 10;
 
@@ -74,7 +74,7 @@ function switchToReveal() {
     timer = REVEAL_TIME;
 
     // Broadcast the correct answer & stats
-    io.to(ROOM_ID).emit('roundResults', { index: currentQuestionIndex });
+    io.to(ROOM_ID).emit('roundResults');
 }
 
 function nextRound() {
@@ -82,9 +82,23 @@ function nextRound() {
     io.to(ROOM_ID).emit("nextRound")
 
     // If no more questions, finish the game
-    if (++currentQuestionIndex > TOTAL_QUESTIONS) {
+    if (++currentQuestionIndex >= TOTAL_QUESTIONS) {
         phase = 'finished';
         io.to(ROOM_ID).emit('gameFinished');
+        roomCreated = false;
+        users = []
+        roomAdmin = {};
+        currentQuestionIndex = 0;
+        noOfGuessed = 0;
+        peopleGuessed = {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+        };
+        clearInterval(tickId);
+        console.log("Quiz finished");
         return;
     }
 
@@ -101,8 +115,6 @@ function stopQuiz() {
 
 // APIs
 // Room APIs
-app.get("/ok", (req, res) => res.send("working"));
-
 app.get("/api/room/status", (req, res) => {
     res.status(200).json({ roomCreated })
 })
