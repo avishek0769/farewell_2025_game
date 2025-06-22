@@ -29,7 +29,7 @@ function Match() {
     const [loadStates, setLoadStates] = useState(0);
     const navigate = useNavigate()
     const route = useLocation()
-    const { fullname, isAdmin } = route
+    const { fullname, isAdmin } = route.state
 
     const timerRef = useRef(null)
     const nextRoundRef = useRef(null)
@@ -167,7 +167,7 @@ function Match() {
 
             // Fetch Total Points
             setTimeout(() => {
-                fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket2.id}`)
+                fetch(`${SERVER_URL}/api/room/initialState?socketId=${socket2.id}`)
                     .then(res => res.json())
                     .then(data => {
                         console.log(data);
@@ -175,7 +175,7 @@ function Match() {
                     }).catch(err => {
                         console.error("Error fetching total score:", err);
                     });
-            }, 200);
+            }, 300);
         });
 
         // socket2 event listeners
@@ -213,6 +213,7 @@ function Match() {
 
     // All preserved states fetched from backend or local storage 
     useEffect(() => {
+        console.log(fullname, isAdmin)
         setCurrentUser({ fullname, isAdmin })
         if (statesLoadedRef.current) return;
         statesLoadedRef.current = true;
@@ -227,60 +228,39 @@ function Match() {
         const pointsEarned = localStorage.getItem("pointsEarned")
         setPointsEarned(Number(pointsEarned))
 
-        // Fetch participants count
-        fetch(`${SERVER_URL}/api/room/getUsersCount`).then(res => res.json())
-            .then(data => {
-                console.log(data)
-                setParticipants(data.userCount)
-            }).catch(err => {
-                console.error("Error fetching participants:", err)
-            })
+        if (!socket) return;
+        const url = new URL(`${SERVER_URL}/api/room/initialState?socketId=${socket.id}`);
 
-        // Fetch currentQuestionIndex
-        fetch(`${SERVER_URL}/api/room/getCurrentQuestionIndex`).then(res => res.json())
-            .then(data => {
-                console.log(data)
-                setCurrentQuestion(data.currentQuestionIndex)
-            }).catch(err => {
-                console.error("Error fetching current question index:", err)
+        fetch(url)
+            .then(r => r.json())
+            .then(({ userCount, currentQuestionIndex, noOfGuessed, totalScore, timer, phase }) => {
+                setParticipants(userCount);
+                setCurrentQuestion(currentQuestionIndex);
+                setAnswered(noOfGuessed);
+                setTimeLeft(timer)
+                if(phase === 'reveal') showResults(true)
+                if (totalScore !== null) setTotalPoints(totalScore);
             })
-
-        // Fetch noOfGuessed
-        fetch(`${SERVER_URL}/api/room/getNoOfGuessed`).then(res => res.json())
-            .then(data => {
-                console.log(data)
-                setAnswered(data.noOfGuessed)
-            }).catch(err => {
-                console.error("Error fetching no of guessed:", err)
-            })
-
-        // Fetch total score
-        console.log(socket)
-        if(socket){
-            fetch(`${SERVER_URL}/api/user/getTotalScore?socketId=${socket.id}`)
-                .then(res => res.json())
-                .then(data => {
-                    console.log(data);
-                    setTotalPoints(data.totalScore);
-                }).catch(err => {
-                    console.error("Error fetching total score:", err);
-                });
-        }
+            .catch(console.error);
 
     }, [loadStates, socket])
 
-    useEffect(() => {
+    const startTimer = () => {
         if (!showResults && timeLeft > 0) {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        // setShowResults(true) // Handle time up
+                        setShowResults(true) // Handle time up
                         return 0
                     }
                     return prev - 1
                 })
             }, 1000)
         }
+    }
+
+    useEffect(() => {
+        
 
         return () => clearInterval(timerRef.current)
     }, [showResults, timeLeft])

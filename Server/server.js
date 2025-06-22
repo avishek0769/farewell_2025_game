@@ -8,20 +8,28 @@ const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true
     }
+
 });
 
-app.use(cors({
+const corsOptions = {
     origin: "*",
-    methods: ["GET", "POST"]
-}))
+    methods: ["GET", "POST"],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+// app.options("/*", cors(corsOptions)); // Preflight for all routes
+
 app.use(json())
 
 // Constants and variables
 const ROOM_ID = "bca-farewell-2025"
 const QUESTION_TIME = 60;
 const REVEAL_TIME = 6;
+const TOTAL_QUESTIONS = 10;
 
 let users = []
 let roomAdmin = {}
@@ -49,6 +57,7 @@ function startQuestionLoop() {
     io.to(ROOM_ID).emit('questionStart', { index: currentQuestionIndex });
 
     tickId = setInterval(() => {
+        console.log(timer, phase);
         timer--;
 
         if (phase === 'answering') {
@@ -92,6 +101,8 @@ function stopQuiz() {
 
 // APIs
 // Room APIs
+app.get("/ok", (req, res) => res.send("working"));
+
 app.get("/api/room/status", (req, res) => {
     res.status(200).json({ roomCreated })
 })
@@ -111,29 +122,27 @@ app.get("/api/room/getUsers", (req, res) => {
     res.status(200).json(users)
 })
 
-app.get("/api/room/getUsersCount", (req, res) => {
-    res.status(200).json({ userCount: users.length })
-})
-
 app.get("/api/room/getAdmin", (req, res) => {
     res.status(200).json(roomAdmin)
 })
 
-app.get("/api/room/getCurrentQuestionIndex", (req, res) => {
-    res.status(200).json({ currentQuestionIndex })
-})
+app.get("/api/room/initialState", (req, res) => {
+    const { socketId } = req.query;
 
-app.get("/api/room/getNoOfGuessed", (req, res) => {
-    res.status(200).json({ noOfGuessed })
-})
+    const user = users.find(user => user.id === socketId);
 
-// User APIs
-app.get("/api/user/getTotalScore", (req, res) => {
-    const { socketId } = req.query
-    console.log("Got", socketId)
-    const user = users.find(user => user.id == socketId)
-    if (user) res.status(200).json({ totalScore: user.totalScore })
-})
+    const payload = {
+        userCount: users.length,
+        currentQuestionIndex,
+        noOfGuessed,
+        totalScore: user ? user.totalScore : null,
+        timer,
+        phase 
+    };
+
+    res.status(200).json(payload);
+});
+
 
 // Socket Events
 io.on("connection", (socket) => {

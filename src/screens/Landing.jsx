@@ -44,7 +44,6 @@ function Landing() {
     })
     const childPhotos = [img1, img2, img3, img4, img5, img6, img7, img1, img2, img3]
     const navigate = useNavigate()
-    // console.log(navigate)
 
     const handleInputChange = (e) => {
         setFormData({
@@ -87,7 +86,12 @@ function Landing() {
 
     const handleJoinQuiz = (e) => {
         e.preventDefault()
-        fetch(`${SERVER_URL}/api/room/status`).then(res => res.json())
+        fetch(`${SERVER_URL}/api/room/status`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
         .then(data => {
             if (data.roomCreated) {
                 setShowJoinModal(true)

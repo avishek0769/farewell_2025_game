@@ -1,1 +1,1 @@
-export const SERVER_URL = "https://z1v3k1h4-3000.inc1.devtunnels.ms"
+export const SERVER_URL = "http://192.168.1.38:3000"; 

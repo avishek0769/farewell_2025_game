@@ -30,17 +30,28 @@ function Room() {
         newSocket.on("connect", () => {
             newSocket.emit("joinRoom", { fullname, isAdmin })
         })
+        // console.log(fullname, isAdmin)
         setCurrentUser({ id: newSocket.id, fullname, isAdmin })
 
         // Get all participants
-        fetch(`${SERVER_URL}/api/room/getUsers`).then(res => res.json())
+        fetch(`${SERVER_URL}/api/room/getUsers`, {
+            headers: {
+                "Content-Type": "application/json"
+            },
+        })
+        .then(res => res.json())
             .then(data => {
                 setPlayers(data)
             })
             .catch(err => console.error('Error fetching players:', err))
 
         // Get admin details
-        fetch(`${SERVER_URL}/api/room/getAdmin`).then(res => res.json())
+        fetch(`${SERVER_URL}/api/room/getAdmin`, {
+            headers: {
+                "Content-Type": "application/json"
+            },
+        })
+        .then(res => res.json())
             .then(data => {
                 setAdmin(data)
             })
@@ -49,7 +60,9 @@ function Room() {
 
     useEffect(() => {
         // Socket event listeners
-        if (socket) {
+        if (socket && Object.keys(currentUser).length > 0) {
+            console.log(currentUser)
+
             socket.on("connect", () => {
                 console.log(socket.id)
                 socket.on('playerJoined', (player) => {
@@ -80,7 +93,7 @@ function Room() {
                 socket.close()
             }
         }
-    }, [socket])
+    }, [socket, currentUser])
 
 
     const addToast = (message, type) => {
@@ -261,13 +274,13 @@ function Room() {
                             {currentUser.isAdmin && (
                                 <button
                                     onClick={handleStartMatch}
-                                    disabled={players.length < 2}
-                                    className={`w-full px-6 py-3 font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4 ${players.length >= 2
+                                    disabled={players.length < 1}
+                                    className={`w-full px-6 py-3 font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl mb-4 ${players.length >= 1
                                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
                                         : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                         }`}
                                 >
-                                    {players.length >= 2 ? 'Start Match' : `Need ${2 - players.length} more player${2 - players.length > 1 ? 's' : ''}`}
+                                    {players.length >= 1 ? 'Start Match' : `Need ${2 - players.length} more player${2 - players.length > 1 ? 's' : ''}`}
                                 </button>
                             )}
 
