@@ -206,11 +206,19 @@ io.on("connection", (socket) => {
     })
 
     // Option Selected
-    socket.on("optionSelected", (optionId) => {
-        peopleGuessed[optionId]++
+    socket.on("selectAnswer", ({ selectedOption, score }) => {
+        peopleGuessed[selectedOption]++
+        users = users.map(user => {
+            if (user.id === socket.id) {
+                user.totalScore += score;
+                noOfGuessed++
+            }
+            return user;
+        });
         io.to(ROOM_ID).emit("updatePeopleGuessed")
         console.log(peopleGuessed)
     })
+
 })
 
 server.listen(3000, () => {

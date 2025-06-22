@@ -200,7 +200,7 @@ function Landing() {
                             onClick={handleJoinQuiz}
                             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl"
                         >
-                            Join Quiz
+                            Join Match
                         </button>
                     </div>
                 </div>

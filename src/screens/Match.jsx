@@ -276,7 +276,7 @@ function Match() {
             nextRoundRef.current = setInterval(() => {
                 setNextRoundTimer(prev => {
                     if (prev <= 1) {
-                        startNextRound()
+                        // startNextRound()
                         return 6
                     }
                     return prev - 1
@@ -318,9 +318,9 @@ function Match() {
             localStorage.setItem("pointsEarned", pointsEarned)
             if (socketConnected) {
                 socket.emit('selectAnswer', {
-                    questionId: questionData[currentQuestion].id,
+                    // questionId: questionData[currentQuestion].id,
+                    // isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
                     selectedOption: selectedOption || null,
-                    isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
                     score: pointsEarned
                 })
             }
