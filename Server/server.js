@@ -2,6 +2,7 @@ import express, { json } from 'express'
 import cors from 'cors'
 import { Server } from 'socket.io'
 import http from "http"
+import { disconnect } from 'process'
 
 const app = express()
 const server = http.createServer(app)
@@ -27,11 +28,12 @@ app.use(json())
 
 // Constants and variables
 const ROOM_ID = "bca-farewell-2025"
-const QUESTION_TIME = 10;
-const REVEAL_TIME = 6;
-const TOTAL_QUESTIONS = 10;
+const QUESTION_TIME = 5;
+const REVEAL_TIME = 3;
+const TOTAL_QUESTIONS = 5;
 
 let users = []
+let usersForResults = []
 let roomAdmin = {}
 let roomCreated = false;
 let timer = QUESTION_TIME
@@ -92,7 +94,7 @@ function nextRound() {
         phase = 'finished';
         io.to(ROOM_ID).emit('gameFinished');
         roomCreated = false;
-        users = []
+        // users = []
         roomAdmin = {};
         currentQuestionIndex = 0;
         noOfGuessed = 0;
@@ -161,6 +163,45 @@ app.get("/api/room/initialState", (req, res) => {
     res.status(200).json(payload);
 });
 
+app.get("/api/room/getResults", (req, res) => {
+    const results = usersForResults.map(user => ({
+        id: user.id,
+        fullname: user.fullname,
+        totalScore: user.totalScore,
+        avatar: user.avatar
+    })).sort((a, b) => b.totalScore - a.totalScore);
+
+    console.log("Results:", results);
+    console.log("Users:", usersForResults);
+
+    res.status(200).json(results);
+    // res.status(200).json([
+    //     {
+    //         id: 'li0E-Ek5zUIfRMCRAAAO',
+    //         fullname: 'one',
+    //         totalScore: 7,
+    //         avatar: 'croodles'
+    //     },
+    //     {
+    //         id: 'GTOxoWSDhdPYt2VGAAAP',
+    //         fullname: 'four',
+    //         totalScore: 20,
+    //         avatar: 'adventurer'
+    //     },
+    //     {
+    //         id: 'EhZKXmy6vduqwGfgAAAR',
+    //         fullname: 'two',
+    //         totalScore: 10,
+    //         avatar: 'croodles'
+    //     },
+    //     {
+    //         id: 'wCjlAIan0kPPJePWAAAQ',
+    //         fullname: 'three',
+    //         totalScore: 17,
+    //         avatar: 'croodles'
+    //     }
+    // ]);
+});
 
 // Socket Events
 io.on("connection", (socket) => {
@@ -197,6 +238,10 @@ io.on("connection", (socket) => {
 
     // Leave a room
     socket.on("disconnect", (data) => {
+        let diconnectedUser = users.find(user => user.id === socket.id);
+        if (diconnectedUser) {
+            usersForResults.push(diconnectedUser);
+        }
         let userLeft;
         users = users.filter(user => {
             if (user.id == socket.id) userLeft = user;

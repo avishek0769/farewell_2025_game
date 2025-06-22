@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Confetti from 'react-confetti'
+import { SERVER_URL } from '../constants'
 
 
 function Result() {
@@ -34,22 +35,29 @@ function Result() {
 
     // Mock data - replace with actual API call
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            const mockData = [
-                { id: 1, name: "Alex Johnson", score: 95, avatar: "🎯" },
-                { id: 2, name: "Sarah Chen", score: 88, avatar: "🌟" },
-                { id: 3, name: "Mike Rodriguez", score: 82, avatar: "🚀" },
-                { id: 4, name: "Emma Wilson", score: 79, avatar: "💎" },
-                { id: 5, name: "David Kim", score: 75, avatar: "🎪" },
-                { id: 6, name: "Lisa Thompson", score: 71, avatar: "🎨" },
-                { id: 7, name: "Ryan O'Connor", score: 68, avatar: "🎭" },
-                { id: 8, name: "Maya Patel", score: 65, avatar: "🎪" },
-            ]
-            setLeaderboard(mockData)
-            setIsLoading(false)
-            setTimeout(() => setShowResults(true), 500)
-        }, 1000)
+        fetch(`${SERVER_URL}/api/room/getResults`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                const uniqueByFullname = Object.values(
+                    data.reduce((acc, player) => {
+                        const existing = acc[player.fullname];
+                        if (!existing || player.totalScore > existing.totalScore) {
+                            acc[player.fullname] = player;
+                        }
+                        return acc;
+                    }, {})
+                );
+
+                console.log(uniqueByFullname);
+                setLeaderboard(uniqueByFullname)
+            })
+        setIsLoading(false)
+        setTimeout(() => setShowResults(true), 500)
     }, [])
 
     const topThree = leaderboard.slice(0, 3)
@@ -78,9 +86,9 @@ function Result() {
         return [topThree[1], topThree[0], topThree[2]] // 2nd, 1st, 3rd for podium effect
     }
 
-    const getDicebearAvatar = (name, size = 80) => {
+    const getDicebearAvatar = (name, avatar, size = 80) => {
         const seed = name.toLowerCase().replace(/\s+/g, '');
-        return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&size=${size}`;
+        return `https://api.dicebear.com/7.x/${avatar}/svg?seed=${seed}&size=${size}`;
     }
 
     const playAgain = () => {
@@ -89,7 +97,7 @@ function Result() {
     }
 
     const shareScore = () => {
-        const shareText = `🎯 Guess Who Quiz Results!\n\n🥇 ${topThree[0]?.name}: ${topThree[0]?.score} points\n🥈 ${topThree[1]?.name}: ${topThree[1]?.score} points\n🥉 ${topThree[2]?.name}: ${topThree[2]?.score} points\n\nCan you beat these scores? 🤔`
+        const shareText = `🎯 Guess Who Quiz Results!\n\n🥇 ${topThree[0]?.fullname}: ${topThree[0]?.score} points\n🥈 ${topThree[1]?.fullname}: ${topThree[1]?.score} points\n🥉 ${topThree[2]?.fullname}: ${topThree[2]?.score} points\n\nCan you beat these scores? 🤔`
 
         if (navigator.share) {
             navigator.share({
@@ -135,7 +143,7 @@ function Result() {
                     <div className={`text-center mb-8 transition-all duration-1500 delay-500 ${showResults ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
                         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-4 md:p-6 mx-auto max-w-2xl shadow-2xl">
                             <p className="text-lg md:text-3xl lg:text-4xl font-bold text-white mb-2">
-                                <span className='text-black text-[1.5rem] sm:text-4xl'>🎉 {topThree[0].name}</span> knows the batch better than anyone!
+                                <span className='text-black text-[1.5rem] sm:text-4xl'>🎉 {topThree[0].full?.fullname}</span> knows the batch better than anyone!
                             </p>
                             <p className="text-base md:text-lg lg:text-xl text-yellow-100">
                                 Scored an amazing {topThree[0].score} points!
@@ -175,8 +183,8 @@ function Result() {
                                                         isSecond ? 'border-gray-400' : 'border-orange-400'}
                                                 `}>
                                                     <img
-                                                        src={getDicebearAvatar(player.name, isFirst ? 100 : 80)}
-                                                        alt={`${player.name} avatar`}
+                                                        src={getDicebearAvatar(player.fullname, player.avatar, isFirst ? 100 : 80)}
+                                                        alt={`${player.fullname} avatar`}
                                                         className="w-full h-full rounded-full object-cover"
                                                     />
                                                 </div>
@@ -197,14 +205,14 @@ function Result() {
                                             <h3 className={`font-bold text-white mb-1 break-words px-1 ${isFirst ? 'text-sm md:text-base lg:text-lg' :
                                                 'text-xs md:text-sm lg:text-base'
                                                 }`}>
-                                                {player.name.split(' ')[0]}
+                                                {player.fullname.split(' ')[0]}
                                             </h3>
 
                                             {/* Score */}
                                             <p className={`font-semibold ${isFirst ? 'text-yellow-300 text-sm md:text-base lg:text-lg' :
                                                 'text-blue-200 text-xs md:text-sm lg:text-base'
                                                 }`}>
-                                                {player.score} pts
+                                                {player.totalScore} pts
                                             </p>
                                         </div>
 
@@ -266,18 +274,18 @@ function Result() {
                                         </span>
                                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white p-0.5 flex-shrink-0">
                                             <img
-                                                src={getDicebearAvatar(player.name, 40)}
-                                                alt={`${player.name} avatar`}
+                                                src={getDicebearAvatar(player.fullname, player.avatar, 40)}
+                                                alt={`${player.fullname} avatar`}
                                                 className="w-full h-full rounded-full object-cover"
                                             />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h4 className="font-semibold text-white text-sm md:text-lg truncate">{player.name}</h4>
+                                            <h4 className="font-semibold text-white text-sm md:text-lg truncate">{player.fullname}</h4>
                                             <p className="text-blue-200 text-xs md:text-sm">Rank #{index + 4}</p>
                                         </div>
                                     </div>
                                     <div className="text-right flex-shrink-0">
-                                        <p className="text-lg md:text-xl font-bold text-white">{player.score}</p>
+                                        <p className="text-lg md:text-xl font-bold text-white">{player.totalScore}</p>
                                         <p className="text-xs md:text-sm text-blue-200">points</p>
                                     </div>
                                 </div>
