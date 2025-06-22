@@ -20,18 +20,73 @@ app.use(json())
 
 // Constants and variables
 const ROOM_ID = "bca-farewell-2025"
+const QUESTION_TIME = 60;
+const REVEAL_TIME = 6;
+
 let users = []
 let roomAdmin = {}
 let roomCreated = false;
-let timer = 0
+let timer = QUESTION_TIME
 let currentQuestionIndex = 0
 let noOfGuessed = 0
+
+let phase = 'idle';     // 'idle' | 'answering' | 'reveal'
+let tickId = null;
 let peopleGuessed = {
     a: 0,
     b: 0,
     c: 0,
     d: 0,
     e: 0,
+}
+
+function startQuestionLoop() {
+    phase = 'answering';
+    timer = QUESTION_TIME;
+
+    // Tell clients a new round has begun
+    io.to(ROOM_ID).emit('timer', timer);     // broadcast seconds left
+    io.to(ROOM_ID).emit('questionStart', { index: currentQuestionIndex });
+
+    tickId = setInterval(() => {
+        timer--;
+
+        if (phase === 'answering') {
+            if (timer === 0) switchToReveal();
+        }
+        else if (phase === 'reveal') {
+            if (timer === 0) nextRound();
+        }
+    }, 1000);
+}
+
+function switchToReveal() {
+    phase = 'reveal';
+    timer = REVEAL_TIME;
+
+    // Broadcast the correct answer & stats
+    io.to(ROOM_ID).emit('roundResults', { index: currentQuestionIndex });
+}
+
+function nextRound() {
+    clearInterval(tickId);
+    io.to(ROOM_ID).emit("nextRound")
+
+    // If no more questions, finish the game
+    if (++currentQuestionIndex > TOTAL_QUESTIONS) {
+        phase = 'finished';
+        io.to(ROOM_ID).emit('gameFinished');
+        return;
+    }
+
+    startQuestionLoop();
+}
+
+function stopQuiz() {
+    clearInterval(tickId);
+    phase = 'idle';
+    currentQuestionIndex = 0;
+    io.emit('quizStopped');
 }
 
 
@@ -77,7 +132,7 @@ app.get("/api/user/getTotalScore", (req, res) => {
     const { socketId } = req.query
     console.log("Got", socketId)
     const user = users.find(user => user.id == socketId)
-    if(user) res.status(200).json({ totalScore: user.totalScore })
+    if (user) res.status(200).json({ totalScore: user.totalScore })
 })
 
 // Socket Events
@@ -92,8 +147,8 @@ io.on("connection", (socket) => {
     socket.on("joinRoom", (data) => {
         const { fullname, isAdmin } = data;
         socket.join(ROOM_ID)
-        
-        if(!isAdmin){
+
+        if (!isAdmin) {
             let randomNum = Math.floor(Math.random() * 6);
             const newUser = {
                 id: socket.id,
@@ -125,6 +180,7 @@ io.on("connection", (socket) => {
 
     // Start Match
     socket.on("startMatch", () => {
+        startQuestionLoop()
         io.to(ROOM_ID).emit("startingMatch")
     })
 

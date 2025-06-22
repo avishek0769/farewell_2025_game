@@ -183,8 +183,8 @@ function Match() {
             setAnswered(prev => prev + 1)
         })
 
-        socket2.on('questionData', (data) => {
-            // Handle new question data
+        socket2.on('questionStart', ({ index }) => {
+            setCurrentQuestion(index)
         })
 
         socket2.on('answerSelected', (data) => {
@@ -193,11 +193,15 @@ function Match() {
 
         socket2.on('roundResults', (data) => {
             setShowResults(true)
-            calculatePoints(data)
+            // calculatePoints(data)
         })
 
         socket2.on('nextRound', () => {
             startNextRound()
+        })
+
+        socket2.on('timer', (timer) => {
+            setTimeLeft(timer)
         })
 
         return () => {
@@ -270,7 +274,7 @@ function Match() {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        setShowResults(true) // Handle time up
+                        // setShowResults(true) // Handle time up
                         return 0
                     }
                     return prev - 1

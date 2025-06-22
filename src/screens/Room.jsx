@@ -20,56 +20,60 @@ function Room() {
     const { fullname, isAdmin } = route.state
 
     useEffect(() => {
-        if(isSocketConnectedRef.current) return;
+        if (isSocketConnectedRef.current) return;
         isSocketConnectedRef.current = true
 
         const newSocket = io(SERVER_URL)
         setSocket(newSocket)
 
         // Join the room
-        newSocket.emit("joinRoom", { fullname, isAdmin })
+        newSocket.on("connect", () => {
+            newSocket.emit("joinRoom", { fullname, isAdmin })
+        })
         setCurrentUser({ id: newSocket.id, fullname, isAdmin })
-        
+
         // Get all participants
         fetch(`${SERVER_URL}/api/room/getUsers`).then(res => res.json())
-        .then(data => {
-            setPlayers(data)
-        })
-        .catch(err => console.error('Error fetching players:', err))
-        
+            .then(data => {
+                setPlayers(data)
+            })
+            .catch(err => console.error('Error fetching players:', err))
+
         // Get admin details
         fetch(`${SERVER_URL}/api/room/getAdmin`).then(res => res.json())
-        .then(data => {
-            setAdmin(data)
-        })
-        .catch(err => console.error('Error fetching admin:', err))        
+            .then(data => {
+                setAdmin(data)
+            })
+            .catch(err => console.error('Error fetching admin:', err))
     }, [])
 
     useEffect(() => {
         // Socket event listeners
         if (socket) {
-            console.log(socket.id)
-            socket.on('playerJoined', (player) => {
-                console.log(player)
-                setPlayers(prev => [...prev, player])
-                addToast(`${player.fullname} joined`, 'join')
-            })
+            socket.on("connect", () => {
+                console.log(socket.id)
+                socket.on('playerJoined', (player) => {
+                    console.log(player)
+                    setPlayers(prev => [...prev, player])
+                    addToast(`${player.fullname} joined`, 'join')
+                })
 
-            socket.on('playerLeft', ({ playerId, playerName }) => {
-                setPlayers(prev => prev.filter(p => p.id !== playerId))
-                addToast(`${playerName} left`, 'leave')
-            })
+                socket.on('playerLeft', ({ playerId, playerName }) => {
+                    setPlayers(prev => prev.filter(p => p.id !== playerId))
+                    addToast(`${playerName} left`, 'leave')
+                })
 
-            socket.on('startingMatch', () => {
-                setShowStartingModal(true)
-                setTimeout(() => {
-                    navigate("/match", {
-                        state: {
-                            fullname: currentUser.fullname,
-                            isAdmin: currentUser.isAdmin
-                        }
-                    })
-                }, 1500)
+                socket.on('startingMatch', () => {
+                    setShowStartingModal(true)
+                    setTimeout(() => {
+                        navigate("/match", {
+                            state: {
+                                fullname: currentUser.fullname,
+                                isAdmin: currentUser.isAdmin
+                            }
+                        })
+                    }, 1500)
+                })
             })
 
             return () => {
@@ -93,6 +97,7 @@ function Room() {
     const handleStartMatch = () => {
         if (socket && currentUser.isAdmin) {
             socket.emit('startMatch')
+            setShowStartingModal(true)
         }
     }
 
