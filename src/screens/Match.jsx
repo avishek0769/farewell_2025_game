@@ -15,7 +15,7 @@ function Match() {
     const { socket, setSocket } = useContext(Context)
     const [socketConnected, setSocketConnected] = useState(false)
     const [totalRounds] = useState(10)
-    const [timeLeft, setTimeLeft] = useState(10)
+    const [timeLeft, setTimeLeft] = useState(16)
     const [participants, setParticipants] = useState(650)
     const [answered, setAnswered] = useState(28)
     const [selectedOption, setSelectedOption] = useState(null)
@@ -161,7 +161,7 @@ function Match() {
     useEffect(() => {
         const socket2 = io(SERVER_URL)
         setSocket(socket2)
-        
+
         socket2.on("connect", () => {
             setSocketConnected(true)
             socket2.emit('joinRoom', { fullname, isAdmin })
@@ -171,9 +171,14 @@ function Match() {
             setTimeout(() => {
                 fetch(`${SERVER_URL}/api/room/initialState?socketId=${socket2.id}`)
                     .then(res => res.json())
-                    .then(data => {
-                        console.log(data);
-                        setTotalPoints(data.totalScore);
+                    .then(({ userCount, currentQuestionIndex, noOfGuessed, totalScore, timer, phase }) => {
+                        console.log({ userCount, currentQuestionIndex, noOfGuessed, totalScore, timer, phase });
+                        setParticipants(userCount);
+                        setCurrentQuestion(currentQuestionIndex);
+                        setAnswered(noOfGuessed);
+                        setTimeLeft(timer)
+                        phase === 'reveal' ? setShowResults(true) : setShowResults(false)
+                        if (totalScore !== null) setTotalPoints(totalScore);
                     }).catch(err => {
                         console.error("Error fetching total score:", err);
                     });
@@ -226,14 +231,6 @@ function Match() {
         statesLoadedRef.current = true;
 
         // Selected option 
-        const localSelectedOption = localStorage.getItem("selectedOption")
-        if (localSelectedOption) {
-            setSelectedOption(localSelectedOption)
-        }
-
-        // Points earned
-        const pointsEarned = localStorage.getItem("pointsEarned")
-        setPointsEarned(Number(pointsEarned))
 
         console.log("Socket --> ", socket)
         if (!socketConnected) return;
@@ -247,7 +244,7 @@ function Match() {
                 setCurrentQuestion(currentQuestionIndex);
                 setAnswered(noOfGuessed);
                 setTimeLeft(timer)
-                phase === 'reveal'? setShowResults(true) : setShowResults(false)
+                phase === 'reveal' ? setShowResults(true) : setShowResults(false)
                 if (totalScore !== null) setTotalPoints(totalScore);
             })
             .catch(console.error);
@@ -290,7 +287,6 @@ function Match() {
     const handleOptionSelect = useCallback((optionId) => {
         if (selectedOption || showResults) return
 
-        localStorage.setItem("selectedOption", optionId)
         socket.emit("optionSelected", optionId)
         setSelectedOption(optionId)
     }, [socketConnected])
@@ -313,34 +309,31 @@ function Match() {
     }, [selectedOption, currentQuestionData, timeLeft])
 
     useEffect(() => {
+        console.log(selectedOption)
         if (selectedOption) {
             let pointsEarned = calculatePoints()
-            localStorage.setItem("pointsEarned", pointsEarned)
             if (socketConnected) {
+                console.log("I am called")
                 socket.emit('selectAnswer', {
-                    // questionId: questionData[currentQuestion].id,
-                    // isCorrect: selectedOption ? questionData[currentQuestion].options.find(opt => opt.id === selectedOption)?.isCorrect || false : false,
                     selectedOption: selectedOption || null,
                     score: pointsEarned
                 })
             }
         }
-    }, [selectedOption, currentQuestion])
+    }, [selectedOption])
 
     const startNextRound = useCallback(() => {
         statesLoadedRef.current = false;
         setIsTransitioning(true)
         setLoadStates(prev => prev + 1)
-        localStorage.removeItem("selectedOption")
-        localStorage.removeItem("pointsEarned")
 
         setTimeout(() => {
             if (currentQuestion < questionData.length) {
                 // setCurrentQuestion(prev => prev + 1)
                 // setTimeLeft(60)
-                // setSelectedOption(null)
+                setSelectedOption(null)
                 // setShowResults(false)
-                // setPointsEarned(0)
+                setPointsEarned(0)
                 // setNextRoundTimer(6)
                 setIsTransitioning(false)
                 // setAnswered(0)

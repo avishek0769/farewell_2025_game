@@ -57,7 +57,6 @@ function startQuestionLoop() {
     io.to(ROOM_ID).emit('questionStart', { index: currentQuestionIndex });
 
     tickId = setInterval(() => {
-        console.log(timer, phase);
         timer--;
 
         if (phase === 'answering') {
@@ -78,6 +77,14 @@ function switchToReveal() {
 }
 
 function nextRound() {
+    noOfGuessed = 0;
+    peopleGuessed = {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0,
+        e: 0,
+    };
     clearInterval(tickId);
     io.to(ROOM_ID).emit("nextRound")
 
@@ -149,7 +156,7 @@ app.get("/api/room/initialState", (req, res) => {
         noOfGuessed,
         totalScore: user ? user.totalScore : null,
         timer,
-        phase 
+        phase,
     };
 
     res.status(200).json(payload);
@@ -181,12 +188,12 @@ io.on("connection", (socket) => {
             users.push(newUser)
         }
 
-        io.in(ROOM_ID).fetchSockets().then(sockets => {
-            for (const socket of sockets) {
-                console.log(socket.id)
-            }
-        })
-        console.log()
+        // io.in(ROOM_ID).fetchSockets().then(sockets => {
+        //     for (const socket of sockets) {
+        //         console.log(socket.id)
+        //     }
+        // })
+        // console.log()
     })
 
     // Leave a room
@@ -215,8 +222,9 @@ io.on("connection", (socket) => {
             }
             return user;
         });
+        console.log(users)
         io.to(ROOM_ID).emit("updatePeopleGuessed")
-        console.log(peopleGuessed)
+        // console.log(peopleGuessed)
     })
 
 })
